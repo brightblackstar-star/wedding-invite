@@ -122,62 +122,86 @@ function bindCopyButtons() {
  * - 버튼/키보드(← →)도 지원
  * - 확대(핀치줌) 제한: viewport + gesture 방지 + 이미지 contain
  */
+ 
 function bindGalleryModal() {
   const modal = document.getElementById("modal");
-  const modalImg = document.getElementById("modalImg");
-  const stage = document.getElementById("modalStage");
+  const scroller = document.getElementById("modalScroller");
   const bg = document.getElementById("modalBg");
   const backBtn = document.getElementById("modalBack");
-  const prevBtn = document.getElementById("modalPrev");
-  const nextBtn = document.getElementById("modalNext");
   const counterEl = document.getElementById("modalCounter");
 
-  if (!modal || !modalImg || !stage || !bg || !backBtn || !prevBtn || !nextBtn || !counterEl) return;
+  if (!modal || !scroller || !bg || !backBtn || !counterEl) return;
 
   const thumbs = Array.from(document.querySelectorAll(".gimg"));
-  const images = thumbs
-    .map((b) => b.getAttribute("data-full"))
-    .filter(Boolean);
+  const images = thumbs.map(b => b.getAttribute("data-full")).filter(Boolean);
 
   if (images.length === 0) return;
 
+  // ✅ 슬라이드 DOM 생성 (한 번만)
+  scroller.innerHTML = images.map((src, i) => {
+    const alt = `갤러리 ${i + 1}`;
+    return `
+      <div class="modal__slide" data-idx="${i}">
+        <img src="${src}" alt="${alt}" draggable="false" />
+      </div>
+    `;
+  }).join("");
+
   let isOpen = false;
   let currentIndex = 0;
+  let rafId = 0;
+  let scrollEndTimer = 0;
 
-  const clampIndex = (idx) => Math.max(0, Math.min(images.length - 1, idx));
+  const clamp = (n) => Math.max(0, Math.min(images.length - 1, n));
 
   const updateCounter = () => {
     counterEl.textContent = `${currentIndex + 1} / ${images.length}`;
   };
 
-  const openAt = (idx, { pushHistory = true } = {}) => {
-    currentIndex = clampIndex(idx);
-    modalImg.src = images[currentIndex];
+  const replaceModalState = () => {
+    // 모달 열림 상태에서 인덱스만 갱신(뒤로가기 스택은 늘리지 않음)
+    if (history.state && history.state.__modal) {
+      history.replaceState({ __modal: true, idx: currentIndex }, "");
+    }
+  };
 
+  const scrollToIndex = (idx, behavior = "auto") => {
+    currentIndex = clamp(idx);
+    updateCounter();
+    replaceModalState();
+
+    const w = scroller.clientWidth;
+    if (!w) return;
+    scroller.scrollTo({ left: w * currentIndex, behavior });
+  };
+
+  const openAt = (idx, { pushHistory = true } = {}) => {
     modal.classList.add("show");
     modal.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     isOpen = true;
 
+    currentIndex = clamp(idx);
     updateCounter();
 
-    // 뒤로가기 지원: "열 때"만 pushState 1번, 이후 사진 넘길 때는 replaceState
-    const state = { __modal: true, idx: currentIndex };
+    // ✅ 뒤로가기(Back)로 닫히게 history state 1개만 쌓기
+    const st = { __modal: true, idx: currentIndex };
     if (pushHistory) {
-      if (history.state && history.state.__modal) {
-        history.replaceState(state, "");
-      } else {
-        history.pushState(state, "");
-      }
+      if (history.state && history.state.__modal) history.replaceState(st, "");
+      else history.pushState(st, "");
     } else {
-      history.replaceState(state, "");
+      history.replaceState(st, "");
     }
+
+    // 레이아웃 잡힌 다음 위치 점프
+    requestAnimationFrame(() => {
+      scrollToIndex(currentIndex, "auto");
+    });
   };
 
   const closeModal = () => {
     modal.classList.remove("show");
     modal.setAttribute("aria-hidden", "true");
-    modalImg.src = "";
     document.body.style.overflow = "";
     isOpen = false;
   };
@@ -187,89 +211,79 @@ function bindGalleryModal() {
     else closeModal();
   };
 
-  const goPrev = () => {
-    if (currentIndex <= 0) {
-      showToast("첫 사진입니다");
-      return;
-    }
-    openAt(currentIndex - 1, { pushHistory: false });
-  };
-
-  const goNext = () => {
-    if (currentIndex >= images.length - 1) {
-      showToast("마지막 사진입니다");
-      return;
-    }
-    openAt(currentIndex + 1, { pushHistory: false });
-  };
-
-  // 썸네일 클릭 → 오픈
-  thumbs.forEach((b, i) => {
+  // 썸네일 클릭 → 해당 인덱스로 오픈
+  thumbs.forEach((b, fallbackIdx) => {
     b.addEventListener("click", () => {
       const idxAttr = b.getAttribute("data-index");
-      const idx = idxAttr !== null ? Number(idxAttr) : i;
-      openAt(Number.isFinite(idx) ? idx : i, { pushHistory: true });
+      const idx = Number.isFinite(Number(idxAttr)) ? Number(idxAttr) : fallbackIdx;
+      openAt(idx, { pushHistory: true });
     });
   });
 
-  // UI 닫기
+  // 닫기
   bg.addEventListener("click", requestCloseWithBack);
   backBtn.addEventListener("click", requestCloseWithBack);
 
-  // 버튼으로 이전/다음
-  prevBtn.addEventListener("click", goPrev);
-  nextBtn.addEventListener("click", goNext);
+  // ✅ 스크롤(스와이프)로 현재 인덱스 추적
+  const onScroll = () => {
+    if (!isOpen) return;
 
-  // 키보드(PC) 지원
+    // rAF로 부드럽게(과도한 연산 방지)
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(() => {
+      const w = scroller.clientWidth || 1;
+      const idx = clamp(Math.round(scroller.scrollLeft / w));
+      if (idx !== currentIndex) {
+        currentIndex = idx;
+        updateCounter();
+      }
+    });
+
+    // 스크롤 멈춘 후 state 반영(뒤로가기 스택 안 늘림)
+    clearTimeout(scrollEndTimer);
+    scrollEndTimer = setTimeout(() => {
+      replaceModalState();
+    }, 120);
+  };
+
+  scroller.addEventListener("scroll", onScroll, { passive: true });
+
+  // ✅ 화면 회전/리사이즈 시 현재 사진 유지
+  window.addEventListener("resize", () => {
+    if (!isOpen) return;
+    // 너비 바뀌면 스냅 기준도 바뀌므로 현재 인덱스로 다시 맞춤
+    requestAnimationFrame(() => scrollToIndex(currentIndex, "auto"));
+  });
+
+  // ✅ 키보드 지원(PC에서 테스트할 때 편함)
   window.addEventListener("keydown", (e) => {
     if (!isOpen) return;
     if (e.key === "Escape") requestCloseWithBack();
-    if (e.key === "ArrowLeft") goPrev();
-    if (e.key === "ArrowRight") goNext();
+    if (e.key === "ArrowLeft") scrollToIndex(currentIndex - 1, "smooth");
+    if (e.key === "ArrowRight") scrollToIndex(currentIndex + 1, "smooth");
   });
 
-  // ✅ 좌우 스와이프(터치)
-  let startX = 0;
-  let startY = 0;
-  let startTime = 0;
-
-  stage.addEventListener("touchstart", (e) => {
-    if (!isOpen) return;
-    const t = e.changedTouches[0];
-    startX = t.clientX;
-    startY = t.clientY;
-    startTime = Date.now();
-  }, { passive: true });
-
-  stage.addEventListener("touchend", (e) => {
-    if (!isOpen) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - startX;
-    const dy = t.clientY - startY;
-    const dt = Date.now() - startTime;
-
-    // 너무 느리거나, 세로 스크롤성 움직임은 무시
-    if (dt > 700) return;
-    if (Math.abs(dx) < 45) return;
-    if (Math.abs(dy) > 70) return;
-
-    if (dx < 0) goNext();
-    else goPrev();
-  }, { passive: true });
-
-  // ✅ 브라우저 뒤로가기(popstate)로 복귀 처리
+  // ✅ 뒤로가기(popstate) 처리: 모달 state면 열고, 아니면 닫기
   window.addEventListener("popstate", (e) => {
     const st = e.state;
     if (st && st.__modal && typeof st.idx === "number") {
-      openAt(st.idx, { pushHistory: false });
+      if (!isOpen) {
+        // 앞으로가기 등으로 모달 상태 복귀한 경우
+        openAt(st.idx, { pushHistory: false });
+      } else {
+        // 열린 상태에서 history state 갱신
+        scrollToIndex(st.idx, "auto");
+      }
     } else {
       if (isOpen) closeModal();
     }
   });
 }
 
+
 updateCountdown();
 setGoogleCalendarLink();
 bindCopyButtons();
 bindGalleryModal();
 setInterval(updateCountdown, 1000 * 30);
+
