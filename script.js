@@ -1,6 +1,29 @@
 // ✅ 예식 날짜/시간 (KST)
 const WEDDING_ISO_KST = "2026-05-17T15:00:00+09:00";
 
+/**
+ * ✅ 페이지 확대 방지(최대한)
+ * - iOS Safari: gesturestart/gesturechange/gestureend 막기
+ * - 더블탭 줌 억제
+ * ※ 브라우저/접근성 정책에 따라 100% 완전 차단은 보장 불가
+ */
+(function preventPageZoom() {
+  const prevent = (e) => e.preventDefault();
+
+  document.addEventListener("gesturestart", prevent, { passive: false });
+  document.addEventListener("gesturechange", prevent, { passive: false });
+  document.addEventListener("gestureend", prevent, { passive: false });
+
+  let lastTouchEnd = 0;
+  document.addEventListener("touchend", function (e) {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, { passive: false });
+})();
+
 function formatCountdown(ms) {
   if (ms <= 0) return "오늘은 결혼식 당일입니다 💐";
 
@@ -94,75 +117,60 @@ function bindCopyButtons() {
 
 /**
  * ✅ 갤러리 모달 요구사항 반영
- * - 사진 크게 보기 후 "뒤로가기"로 돌아오기: history.pushState + popstate로 구현
- * - 확대(핀치줌) 제한: 모달 오픈 시 제스처 차단(가능한 범위에서)
+ * - 뒤로가기: history.pushState + popstate
+ * - 좌우 스와이프: 터치 제스처로 이전/다음
+ * - 버튼/키보드(← →)도 지원
+ * - 확대(핀치줌) 제한: viewport + gesture 방지 + 이미지 contain
  */
 function bindGalleryModal() {
   const modal = document.getElementById("modal");
   const modalImg = document.getElementById("modalImg");
+  const stage = document.getElementById("modalStage");
   const bg = document.getElementById("modalBg");
   const backBtn = document.getElementById("modalBack");
+  const prevBtn = document.getElementById("modalPrev");
+  const nextBtn = document.getElementById("modalNext");
+  const counterEl = document.getElementById("modalCounter");
 
-  if (!modal || !modalImg || !bg || !backBtn) return;
+  if (!modal || !modalImg || !stage || !bg || !backBtn || !prevBtn || !nextBtn || !counterEl) return;
+
+  const thumbs = Array.from(document.querySelectorAll(".gimg"));
+  const images = thumbs
+    .map((b) => b.getAttribute("data-full"))
+    .filter(Boolean);
+
+  if (images.length === 0) return;
 
   let isOpen = false;
+  let currentIndex = 0;
 
-  // iOS 사파리 제스처(핀치 줌) 이벤트 차단용
-  const preventGesture = (e) => {
-    if (!isOpen) return;
-    e.preventDefault();
+  const clampIndex = (idx) => Math.max(0, Math.min(images.length - 1, idx));
+
+  const updateCounter = () => {
+    counterEl.textContent = `${currentIndex + 1} / ${images.length}`;
   };
 
-  // 더블탭 줌 방지(일부 브라우저)
-  let lastTouchEnd = 0;
-  const preventDoubleTapZoom = (e) => {
-    if (!isOpen) return;
-    const now = Date.now();
-    if (now - lastTouchEnd <= 300) {
-      e.preventDefault();
-    }
-    lastTouchEnd = now;
-  };
+  const openAt = (idx, { pushHistory = true } = {}) => {
+    currentIndex = clampIndex(idx);
+    modalImg.src = images[currentIndex];
 
-  const lockForModal = () => {
-    document.body.style.overflow = "hidden";
-    document.documentElement.classList.add("noGesture");
-    document.body.classList.add("noGesture");
-
-    document.addEventListener("gesturestart", preventGesture, { passive: false });
-    document.addEventListener("gesturechange", preventGesture, { passive: false });
-    document.addEventListener("gestureend", preventGesture, { passive: false });
-
-    modal.addEventListener("touchend", preventDoubleTapZoom, { passive: false });
-  };
-
-  const unlockForModal = () => {
-    document.body.style.overflow = "";
-    document.documentElement.classList.remove("noGesture");
-    document.body.classList.remove("noGesture");
-
-    document.removeEventListener("gesturestart", preventGesture);
-    document.removeEventListener("gesturechange", preventGesture);
-    document.removeEventListener("gestureend", preventGesture);
-
-    modal.removeEventListener("touchend", preventDoubleTapZoom);
-  };
-
-  const openModal = (src, { pushHistory = true } = {}) => {
-    modalImg.src = src;
     modal.classList.add("show");
     modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
     isOpen = true;
-    lockForModal();
 
-    // 뒤로가기 지원: 첫 오픈은 pushState, 모달 열린 상태에서 다른 사진 누르면 replaceState
+    updateCounter();
+
+    // 뒤로가기 지원: "열 때"만 pushState 1번, 이후 사진 넘길 때는 replaceState
+    const state = { __modal: true, idx: currentIndex };
     if (pushHistory) {
-      const state = { __modal: true, src };
       if (history.state && history.state.__modal) {
         history.replaceState(state, "");
       } else {
         history.pushState(state, "");
       }
+    } else {
+      history.replaceState(state, "");
     }
   };
 
@@ -170,45 +178,91 @@ function bindGalleryModal() {
     modal.classList.remove("show");
     modal.setAttribute("aria-hidden", "true");
     modalImg.src = "";
+    document.body.style.overflow = "";
     isOpen = false;
-    unlockForModal();
   };
 
   const requestCloseWithBack = () => {
-    // 모달이 history로 열렸으면 back으로 닫아야 "뒤로가기" UX가 깔끔함
-    if (history.state && history.state.__modal) {
-      history.back();
-    } else {
-      closeModal();
-    }
+    if (history.state && history.state.__modal) history.back();
+    else closeModal();
   };
 
-  // 썸네일 클릭 → 모달 오픈 + history push
-  document.querySelectorAll(".gimg").forEach((b) => {
+  const goPrev = () => {
+    if (currentIndex <= 0) {
+      showToast("첫 사진입니다");
+      return;
+    }
+    openAt(currentIndex - 1, { pushHistory: false });
+  };
+
+  const goNext = () => {
+    if (currentIndex >= images.length - 1) {
+      showToast("마지막 사진입니다");
+      return;
+    }
+    openAt(currentIndex + 1, { pushHistory: false });
+  };
+
+  // 썸네일 클릭 → 오픈
+  thumbs.forEach((b, i) => {
     b.addEventListener("click", () => {
-      const full = b.getAttribute("data-full");
-      if (!full) return;
-      openModal(full, { pushHistory: true });
+      const idxAttr = b.getAttribute("data-index");
+      const idx = idxAttr !== null ? Number(idxAttr) : i;
+      openAt(Number.isFinite(idx) ? idx : i, { pushHistory: true });
     });
   });
 
-  // UI 닫기(배경/뒤로 버튼)
+  // UI 닫기
   bg.addEventListener("click", requestCloseWithBack);
   backBtn.addEventListener("click", requestCloseWithBack);
 
-  // ESC 닫기(PC)
+  // 버튼으로 이전/다음
+  prevBtn.addEventListener("click", goPrev);
+  nextBtn.addEventListener("click", goNext);
+
+  // 키보드(PC) 지원
   window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && isOpen) requestCloseWithBack();
+    if (!isOpen) return;
+    if (e.key === "Escape") requestCloseWithBack();
+    if (e.key === "ArrowLeft") goPrev();
+    if (e.key === "ArrowRight") goNext();
   });
+
+  // ✅ 좌우 스와이프(터치)
+  let startX = 0;
+  let startY = 0;
+  let startTime = 0;
+
+  stage.addEventListener("touchstart", (e) => {
+    if (!isOpen) return;
+    const t = e.changedTouches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+    startTime = Date.now();
+  }, { passive: true });
+
+  stage.addEventListener("touchend", (e) => {
+    if (!isOpen) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    const dt = Date.now() - startTime;
+
+    // 너무 느리거나, 세로 스크롤성 움직임은 무시
+    if (dt > 700) return;
+    if (Math.abs(dx) < 45) return;
+    if (Math.abs(dy) > 70) return;
+
+    if (dx < 0) goNext();
+    else goPrev();
+  }, { passive: true });
 
   // ✅ 브라우저 뒤로가기(popstate)로 복귀 처리
   window.addEventListener("popstate", (e) => {
     const st = e.state;
-    if (st && st.__modal && st.src) {
-      // 앞으로 가기 등으로 모달 상태로 복귀했을 때
-      openModal(st.src, { pushHistory: false });
+    if (st && st.__modal && typeof st.idx === "number") {
+      openAt(st.idx, { pushHistory: false });
     } else {
-      // 모달 닫고 원래 화면으로
       if (isOpen) closeModal();
     }
   });
