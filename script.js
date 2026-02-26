@@ -116,13 +116,11 @@ function bindCopyButtons() {
 }
 
 /**
- * ✅ 갤러리 모달 요구사항 반영
+ * ✅ 갤러리 모달
  * - 뒤로가기: history.pushState + popstate
- * - 좌우 스와이프: 터치 제스처로 이전/다음
- * - 버튼/키보드(← →)도 지원
- * - 확대(핀치줌) 제한: viewport + gesture 방지 + 이미지 contain
+ * - 가로 스크롤 + 스냅
+ * - (중요) 한 번 스와이프에 최대 1장만 이동 + 더 천천히 이동
  */
- 
 function bindGalleryModal() {
   const modal = document.getElementById("modal");
   const scroller = document.getElementById("modalScroller");
@@ -134,10 +132,8 @@ function bindGalleryModal() {
 
   const thumbs = Array.from(document.querySelectorAll(".gimg"));
   const images = thumbs.map(b => b.getAttribute("data-full")).filter(Boolean);
-
   if (images.length === 0) return;
 
-  // ✅ 슬라이드 DOM 생성 (한 번만)
   scroller.innerHTML = images.map((src, i) => {
     const alt = `갤러리 ${i + 1}`;
     return `
@@ -149,8 +145,14 @@ function bindGalleryModal() {
 
   let isOpen = false;
   let currentIndex = 0;
+
   let rafId = 0;
   let scrollEndTimer = 0;
+
+  // 스와이프 제어용
+  let swipeStartIndex = 0;
+  let swipeStartScrollLeft = 0;
+  let animId = 0;
 
   const clamp = (n) => Math.max(0, Math.min(images.length - 1, n));
 
@@ -159,20 +161,60 @@ function bindGalleryModal() {
   };
 
   const replaceModalState = () => {
-    // 모달 열림 상태에서 인덱스만 갱신(뒤로가기 스택은 늘리지 않음)
     if (history.state && history.state.__modal) {
       history.replaceState({ __modal: true, idx: currentIndex }, "");
     }
   };
 
-  const scrollToIndex = (idx, behavior = "auto") => {
+  const stopAnim = () => {
+    if (animId) cancelAnimationFrame(animId);
+    animId = 0;
+  };
+
+  // ✅ 천천히 이동하는 스크롤 애니메이션
+  const animateScrollTo = (targetLeft, duration = 420) => {
+    stopAnim();
+
+    const startLeft = scroller.scrollLeft;
+    const delta = targetLeft - startLeft;
+    const startTime = performance.now();
+
+    // 애니메이션 동안 스냅 간섭 최소화
+    const prevSnap = scroller.style.scrollSnapType;
+    scroller.style.scrollSnapType = "none";
+
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    const step = (now) => {
+      const t = Math.min(1, (now - startTime) / duration);
+      scroller.scrollLeft = startLeft + delta * easeOutCubic(t);
+
+      if (t < 1) {
+        animId = requestAnimationFrame(step);
+      } else {
+        scroller.scrollLeft = targetLeft;
+        scroller.style.scrollSnapType = prevSnap || "x mandatory";
+        animId = 0;
+      }
+    };
+
+    animId = requestAnimationFrame(step);
+  };
+
+  const scrollToIndex = (idx, mode = "auto") => {
     currentIndex = clamp(idx);
     updateCounter();
     replaceModalState();
 
-    const w = scroller.clientWidth;
-    if (!w) return;
-    scroller.scrollTo({ left: w * currentIndex, behavior });
+    const w = scroller.clientWidth || 1;
+    const left = w * currentIndex;
+
+    if (mode === "auto") {
+      stopAnim();
+      scroller.scrollLeft = left;
+    } else {
+      animateScrollTo(left, 440); // 조금 더 천천히
+    }
   };
 
   const openAt = (idx, { pushHistory = true } = {}) => {
@@ -184,7 +226,6 @@ function bindGalleryModal() {
     currentIndex = clamp(idx);
     updateCounter();
 
-    // ✅ 뒤로가기(Back)로 닫히게 history state 1개만 쌓기
     const st = { __modal: true, idx: currentIndex };
     if (pushHistory) {
       if (history.state && history.state.__modal) history.replaceState(st, "");
@@ -193,10 +234,7 @@ function bindGalleryModal() {
       history.replaceState(st, "");
     }
 
-    // 레이아웃 잡힌 다음 위치 점프
-    requestAnimationFrame(() => {
-      scrollToIndex(currentIndex, "auto");
-    });
+    requestAnimationFrame(() => scrollToIndex(currentIndex, "auto"));
   };
 
   const closeModal = () => {
@@ -211,7 +249,7 @@ function bindGalleryModal() {
     else closeModal();
   };
 
-  // 썸네일 클릭 → 해당 인덱스로 오픈
+  // 썸네일 클릭
   thumbs.forEach((b, fallbackIdx) => {
     b.addEventListener("click", () => {
       const idxAttr = b.getAttribute("data-index");
@@ -224,11 +262,38 @@ function bindGalleryModal() {
   bg.addEventListener("click", requestCloseWithBack);
   backBtn.addEventListener("click", requestCloseWithBack);
 
-  // ✅ 스크롤(스와이프)로 현재 인덱스 추적
+  // ✅ 스와이프 시작: 기준 인덱스/스크롤 기록
+  scroller.addEventListener("touchstart", () => {
+    if (!isOpen) return;
+    stopAnim();
+    swipeStartIndex = currentIndex;
+    swipeStartScrollLeft = scroller.scrollLeft;
+  }, { passive: true });
+
+  // ✅ 스와이프 종료: "최대 1장 + 임계값" 적용
+  scroller.addEventListener("touchend", () => {
+    if (!isOpen) return;
+
+    const w = scroller.clientWidth || 1;
+    const delta = scroller.scrollLeft - swipeStartScrollLeft;
+
+    // 임계값을 좀 크게 잡아서 "조금만 움직여도 넘어감" 방지
+    const threshold = w * 0.26; // 26% 이상 움직여야 넘어감
+
+    let target = swipeStartIndex;
+    if (delta > threshold) target = swipeStartIndex + 1;
+    else if (delta < -threshold) target = swipeStartIndex - 1;
+
+    // ✅ 한 번에 1장만
+    target = clamp(target);
+
+    scrollToIndex(target, "slow");
+  }, { passive: true });
+
+  // 스크롤 중 카운터 업데이트(드래그 중에도 표시 자연스럽게)
   const onScroll = () => {
     if (!isOpen) return;
 
-    // rAF로 부드럽게(과도한 연산 방지)
     if (rafId) cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(() => {
       const w = scroller.clientWidth || 1;
@@ -239,51 +304,39 @@ function bindGalleryModal() {
       }
     });
 
-    // 스크롤 멈춘 후 state 반영(뒤로가기 스택 안 늘림)
     clearTimeout(scrollEndTimer);
-    scrollEndTimer = setTimeout(() => {
+    scrollEndTimer = window.setTimeout(() => {
       replaceModalState();
-    }, 120);
+    }, 160);
   };
 
   scroller.addEventListener("scroll", onScroll, { passive: true });
 
-  // ✅ 화면 회전/리사이즈 시 현재 사진 유지
   window.addEventListener("resize", () => {
     if (!isOpen) return;
-    // 너비 바뀌면 스냅 기준도 바뀌므로 현재 인덱스로 다시 맞춤
     requestAnimationFrame(() => scrollToIndex(currentIndex, "auto"));
   });
 
-  // ✅ 키보드 지원(PC에서 테스트할 때 편함)
   window.addEventListener("keydown", (e) => {
     if (!isOpen) return;
     if (e.key === "Escape") requestCloseWithBack();
-    if (e.key === "ArrowLeft") scrollToIndex(currentIndex - 1, "smooth");
-    if (e.key === "ArrowRight") scrollToIndex(currentIndex + 1, "smooth");
+    if (e.key === "ArrowLeft") scrollToIndex(currentIndex - 1, "slow");
+    if (e.key === "ArrowRight") scrollToIndex(currentIndex + 1, "slow");
   });
 
-  // ✅ 뒤로가기(popstate) 처리: 모달 state면 열고, 아니면 닫기
   window.addEventListener("popstate", (e) => {
     const st = e.state;
     if (st && st.__modal && typeof st.idx === "number") {
-      if (!isOpen) {
-        // 앞으로가기 등으로 모달 상태 복귀한 경우
-        openAt(st.idx, { pushHistory: false });
-      } else {
-        // 열린 상태에서 history state 갱신
-        scrollToIndex(st.idx, "auto");
-      }
+      if (!isOpen) openAt(st.idx, { pushHistory: false });
+      else scrollToIndex(st.idx, "auto");
     } else {
       if (isOpen) closeModal();
     }
   });
 }
 
-
 updateCountdown();
 setGoogleCalendarLink();
 bindCopyButtons();
 bindGalleryModal();
 setInterval(updateCountdown, 1000 * 30);
-

@@ -7,13 +7,12 @@
 6. 실제 URL에서 모바일로 확인
 7. 카톡 공유 미리보기는 마지막에 점검(OG 이미지가 잘 뜨는지)-->
 
-
 <!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
 
-  <!-- ✅ 확대 방지(최대한): user-scalable=no + max/min scale -->
+  <!-- ✅ 확대 방지(최대한) -->
   <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="format-detection" content="telephone=no" />
@@ -21,47 +20,41 @@
   <title>홍유석 · 박샛별 결혼합니다</title>
   <meta name="description" content="홍유석과 박샛별의 결혼식에 초대합니다. 2026년 5월 17일(일) 오후 3시, 서울한방진흥센터" />
 
-  <!-- 공유 미리보기(OG)
-       ✅ 아래 REPO_NAME만 '너 저장소 이름'으로 바꾸면 됨
-       예) https://brightblackstar-star.github.io/wedding-invite/ -->
+  <!-- OG (실제 주소 반영 완료) -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="홍유석 ❤ 박샛별 결혼합니다" />
   <meta property="og:description" content="2026.05.17 (일) 15:00 · 서울한방진흥센터" />
   <meta property="og:image" content="https://brightblackstar-star.github.io/wedding-invite/og-image.jpg" />
   <meta property="og:url" content="https://brightblackstar-star.github.io/wedding-invite/" />
- 
-  <meta name="theme-color" content="#f4efe6" />
 
-  <!-- 전통 느낌: 바탕계열(세리프) + 가독성(산세리프) -->
+  <meta name="theme-color" content="#f6f7f9" />
+
+  <!-- 요즘 스타일: Sans 중심 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=7" />
 </head>
 
 <body>
   <main class="wrap">
     <article class="paper" id="top">
-      <!-- HERO -->
+
+      <!-- HERO (첫 화면 구성 최적화) -->
       <header class="hero">
         <div class="hero__photo">
           <img src="cover.jpg" alt="커버 사진" loading="eager" />
         </div>
 
         <div class="hero__inner">
-          <p class="hero__kicker">2026. 05. 17 · SUN · 15:00</p>
-
           <h1 class="hero__names">
             <span class="hero__name">홍유석</span>
-            <span class="hero__seal" aria-hidden="true"></span>
+            <span class="hero__dot" aria-hidden="true"></span>
             <span class="hero__name">박샛별</span>
           </h1>
 
-          <div class="ornament" aria-hidden="true">
-            <span class="ornament__dot"></span>
-          </div>
-
+          <p class="hero__meta">2026년 5월 17일 (일) 오후 3시</p>
           <p class="hero__place">서울한방진흥센터</p>
 
           <div class="hero__cta">
@@ -74,6 +67,7 @@
       <!-- GREETING -->
       <section class="section" id="greeting">
         <h2 class="section__title">초대합니다</h2>
+
         <p class="paragraph">
           서로 다른 시간 속을 걸어온 두 사람이<br />
           이제 한 길 위에서 같은 방향을 바라보려 합니다.<br />
@@ -81,16 +75,22 @@
           정중히 초대드립니다.
         </p>
 
+        <!-- ✅ 가운데 정렬 (신랑/신부 + 부모님) -->
         <div class="family">
-          <div class="family__row">
-            <span class="family__label">신랑</span>
-            <strong class="family__name">홍유석</strong>
-            <span class="family__muted">· 홍양식 · 윤옥선 의 아들</span>
+          <div class="family__item">
+            <div class="family__who">
+              <span class="family__label">신랑</span>
+              <strong class="family__name">홍유석</strong>
+            </div>
+            <div class="family__parents">홍양식 · 윤옥선 의 아들</div>
           </div>
-          <div class="family__row">
-            <span class="family__label">신부</span>
-            <strong class="family__name">박샛별</strong>
-            <span class="family__muted">· 박용기 · 임윤선 의 딸</span>
+
+          <div class="family__item">
+            <div class="family__who">
+              <span class="family__label">신부</span>
+              <strong class="family__name">박샛별</strong>
+            </div>
+            <div class="family__parents">박용기 · 임윤선 의 딸</div>
           </div>
         </div>
       </section>
@@ -136,14 +136,13 @@
         <div class="btnRow">
           <a class="btn" href="https://map.kakao.com/link/map/서울한방진흥센터,37.5806647708,127.03722638" target="_blank" rel="noopener">카카오맵</a>
           <a class="btn" href="https://map.naver.com/v5/search/서울한방진흥센터" target="_blank" rel="noopener">네이버지도</a>
-          <!-- ✅ 구글지도 제거 -->
         </div>
       </section>
 
       <!-- GALLERY -->
       <section class="section" id="gallery">
         <h2 class="section__title">갤러리</h2>
-        <p class="paragraph small">사진을 누르면 크게 볼 수 있어요. (큰 화면에서 좌우로 넘기기 가능)</p>
+        <!-- ✅ "사진을 누르면..." 문구 삭제 -->
 
         <div class="gallery">
           <button class="gimg" data-full="gallery/1.jpg" data-index="0"><img src="gallery/1.jpg" alt="갤러리 1" loading="lazy"></button>
@@ -178,7 +177,7 @@
         </div>
       </section>
 
-      <!-- ACCOUNT (계좌는 예시 유지: 필요 시 교체) -->
+      <!-- ACCOUNT -->
       <section class="section" id="account">
         <h2 class="section__title">마음 전하실 곳</h2>
         <p class="paragraph small">버튼을 누르면 계좌번호가 복사됩니다.</p>
@@ -206,7 +205,7 @@
         <div class="toast" id="toast" aria-live="polite" aria-atomic="true">복사했습니다</div>
       </section>
 
-      <!-- ✅ FAQ를 "주차 여부" 바로 위로 이동 -->
+      <!-- FAQ -->
       <section class="section" id="faq">
         <h2 class="section__title">FAQ</h2>
 
@@ -235,7 +234,7 @@
         </div>
       </section>
 
-      <!-- RSVP (주차 여부만) -->
+      <!-- RSVP -->
       <section class="section" id="rsvp">
         <h2 class="section__title">주차 여부</h2>
         <p class="paragraph">
@@ -249,6 +248,26 @@
         </a>
       </section>
 
+      <!-- ✅ 손님 사진 업로드 (Dropbox) -->
+      <section class="section" id="upload">
+        <h2 class="section__title">사진 업로드</h2>
+
+        <p class="paragraph">
+          식장에서 찍은 사진을 올려주시면<br/>
+          소중한 추억으로 잘 간직하겠습니다.
+        </p>
+
+        <a class="btn btn--primary btn--wide"
+           href="https://www.dropbox.com/request/AUCHNsu9NkAzdSF3SO35"
+           target="_blank" rel="noopener">
+          드롭박스로 사진 올리기
+        </a>
+
+        <p class="paragraph small">
+          ※ Dropbox 계정이 없어도 업로드할 수 있어요.
+        </p>
+      </section>
+
       <footer class="footer">
         <a class="footer__top" href="#top">맨 위로</a>
         <p class="footer__copy">© 2026 홍유석 · 박샛별</p>
@@ -256,7 +275,7 @@
     </article>
   </main>
 
-   <!-- 갤러리 모달 (뒤로가기 + 좌우 스와이프 슬라이드) -->
+  <!-- 갤러리 모달 (뒤로가기 + 좌우 스와이프 슬라이드) -->
   <div class="modal" id="modal" aria-hidden="true">
     <button class="modal__bg" id="modalBg" aria-label="뒤로"></button>
 
@@ -269,16 +288,13 @@
       </div>
 
       <div class="modal__stage">
-        <!-- ✅ 여기에서 '가로 스크롤로' 사진이 넘어갑니다 -->
         <div class="modal__scroller" id="modalScroller" aria-label="사진 슬라이드"></div>
       </div>
 
       <div class="modal__hint">좌우로 넘겨서 사진을 볼 수 있어요</div>
     </div>
-  </div> 
+  </div>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=7"></script>
 </body>
 </html>
-              
-
