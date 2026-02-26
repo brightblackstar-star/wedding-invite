@@ -256,7 +256,7 @@
     </article>
   </main>
 
-  <!-- 갤러리 모달 (뒤로가기 + 좌우 스와이프) -->
+   <!-- 갤러리 모달 (뒤로가기 + 좌우 스와이프 슬라이드) -->
   <div class="modal" id="modal" aria-hidden="true">
     <button class="modal__bg" id="modalBg" aria-label="뒤로"></button>
 
@@ -268,17 +268,17 @@
         <button class="modal__back" id="modalBack" type="button" aria-label="뒤로">뒤로</button>
       </div>
 
-      <div class="modal__stage" id="modalStage">
-        <button class="modalNav modalNav--prev" id="modalPrev" type="button" aria-label="이전 사진">‹</button>
-        <img id="modalImg" alt="선택한 사진 크게 보기" />
-        <button class="modalNav modalNav--next" id="modalNext" type="button" aria-label="다음 사진">›</button>
+      <div class="modal__stage">
+        <!-- ✅ 여기에서 '가로 스크롤로' 사진이 넘어갑니다 -->
+        <div class="modal__scroller" id="modalScroller" aria-label="사진 슬라이드"></div>
       </div>
 
       <div class="modal__hint">좌우로 넘겨서 사진을 볼 수 있어요</div>
     </div>
-  </div>
+  </div> 
 
   <script src="script.js"></script>
 </body>
 </html>
               
+
