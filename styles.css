@@ -6,6 +6,12 @@
   --line:rgba(17,24,39,.10);
   --shadow: 0 18px 60px rgba(0,0,0,.08);
 
+  /* ✅ 달력 포인트 컬러(너무 튀지 않게) */
+  --accent:#2563eb;
+  --accentSoft: rgba(37,99,235,.12);
+  --sun: #ef4444;
+  --sat: #3b82f6;
+
   --radius:18px;
 
   --sectionPadY: 26px;
@@ -17,6 +23,7 @@
 *{ box-sizing:border-box; }
 html{ scroll-behavior:smooth; }
 
+/* ✅ 모바일 확대(가능한 범위에서) 억제 */
 html, body{
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
@@ -46,28 +53,46 @@ body{
 }
 
 /* HERO */
+.hero{
+  padding-top: 2px;
+}
+
 .hero__photo{
-  padding: 14px 14px 0; /* 사진 주변 여백 */
+  /* ✅ 4:5 비율 프레임 */
+  width: min(420px, 90%);
+  margin: 14px auto 0;
+  aspect-ratio: 4 / 5;
+  border-radius: 18px;
+  overflow:hidden;
+  border: 1px solid var(--line);
+  background: rgba(17,24,39,.02);
 }
 
 .hero__photo img{
   width:100%;
-  height: clamp(220px, 32svh, 320px); /* 첫 화면에 버튼까지 보이도록 */
+  height:100%;
   display:block;
   object-fit: cover;
-  border-radius: 16px;
-  border: 1px solid var(--line);
 }
 
 .hero__inner{
-  padding: 12px 18px 16px;
+  padding: 10px 18px 16px;
   text-align:center;
+}
+
+/* ✅ D-day 얇게 */
+.hero__dday{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .10em;
+  margin: 2px 0 8px;
 }
 
 .hero__names{
   margin:0;
   font-weight: 700;
-  font-size: clamp(22px, 5.4vw, 24px); /* 이름 크기 약 2/3 */
+  font-size: clamp(22px, 5.4vw, 24px);
   letter-spacing: -0.02em;
   line-height: 1.2;
   display:flex;
@@ -88,14 +113,12 @@ body{
   margin: 10px 0 4px;
   color: var(--muted);
   font-size: 13px;
-  letter-spacing: -0.01em;
 }
 
 .hero__place{
   margin: 0;
   color: var(--muted);
   font-size: 13px;
-  letter-spacing: -0.01em;
 }
 
 .hero__cta{
@@ -128,43 +151,55 @@ body{
   color: var(--muted);
 }
 
-/* FAMILY (가운데 정렬) */
-.family{
+/* ✅ family: 박스 없이, 나란히 정렬만 */
+.familyRow{
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
   display:grid;
-  gap: 14px;
-}
-
-.family__item{
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
   text-align:center;
+  position: relative;
 }
 
-.family__who{
-  display:flex;
-  justify-content:center;
-  align-items:baseline;
-  gap: 10px;
+.familyRow::before{
+  content:"";
+  position:absolute;
+  top: 18px;
+  bottom: 2px;
+  left: 50%;
+  width: 1px;
+  background: var(--line);
+  transform: translateX(-0.5px);
+  opacity: .85;
 }
 
-.family__label{
+.familyCol__role{
   color: var(--muted);
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 13px;
 }
 
-.family__name{
-  color: var(--ink);
-  font-weight: 800;
+.familyCol__name{
+  margin-top: 2px;
+  font-weight: 900;
   font-size: 16px;
   letter-spacing: -0.02em;
 }
 
-.family__parents{
-  margin-top: 4px;
+.familyCol__parents{
+  margin-top: 6px;
   color: var(--muted);
   font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 360px){
+  .familyRow{
+    grid-template-columns: 1fr;
+  }
+  .familyRow::before{ display:none; }
 }
 
 /* INFO */
@@ -194,27 +229,27 @@ body{
   color: var(--muted);
 }
 
-.countdown{
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-  text-align:center;
+/* ✅ calendar.jpg 이미지(화면 가로의 40%) */
+.calendarImg{
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
 }
-.countdown__label{
-  font-size: 12px;
-  letter-spacing: .12em;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-.countdown__value{
-  font-weight: 800;
-  font-size: 20px;
+
+.calendarImg img{
+  width: 60vw;        /* ✅ 화면 가로 기준 60% */
+  max-width: 100%;    /* ✅ 컨테이너보다 커지면 넘치지 않게 */
+  height: auto;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+  display: block;
 }
 
 /* PLACE */
 .place{
   text-align:center;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 .place__name{
   font-weight: 800;
@@ -228,6 +263,23 @@ body{
   margin-top: 8px;
   font-size: 13px;
   color: var(--muted);
+}
+
+/* ✅ 카카오맵 미리보기: 50% 수준 + 비율 5:4 */
+.kakaoMapWrap{
+  width: min(360px, 70%);
+  aspect-ratio: 5 / 4;
+  margin: 12px auto 14px;
+  border-radius: 14px;
+  overflow:hidden;
+  border: 1px solid var(--line);
+  background: rgba(17,24,39,.02);
+}
+
+/* roughmap 컨테이너가 wrapper를 꽉 채우도록 */
+.kakaoMapWrap > .root_daum_roughmap{
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* BUTTONS */
@@ -396,7 +448,7 @@ body{
 }
 .toast.show{ opacity: 1; }
 
-/* MODAL (스와이프 슬라이더) */
+/* MODAL (transform 기반: 흔들림/잔상 개선) */
 .modal{
   position: fixed;
   inset: 0;
@@ -442,39 +494,37 @@ body{
   letter-spacing: .02em;
 }
 .modal__back{
+  width: 38px;
   height: 34px;
-  padding: 0 12px;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,.35);
   background: transparent;
   color:#fff;
-  font-weight: 800;
+  font-weight: 900;
+  font-size: 20px;
+  line-height: 1;
   cursor:pointer;
 }
 
-.modal__stage{
-  padding: 0;
-}
-
-/* 스냅은 유지하되, "너무 빠르게 여러 장 넘어감"은 JS에서 1장 제한 */
-.modal__scroller{
-  display:flex;
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
+.modal__viewport{
+  /* ✅ 높이 고정에 가까워서 이미지 로딩 시 흔들림 감소 */
+  height: min(78svh, 520px);
+  overflow:hidden;
+  position: relative;
   touch-action: pan-x;
-  overscroll-behavior-x: contain;
-
-  scrollbar-width: none;
+  background: #000;
 }
-.modal__scroller::-webkit-scrollbar{ display:none; }
+
+.modal__track{
+  height: 100%;
+  display:flex;
+  will-change: transform;
+  transform: translate3d(0,0,0);
+}
 
 .modal__slide{
   flex: 0 0 100%;
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
+  height: 100%;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -484,14 +534,14 @@ body{
 .modal__slide img{
   display:block;
   max-width: 100%;
-  max-height: 78vh;
+  max-height: 100%;
   width: auto;
   height: auto;
   object-fit: contain;
-
   -webkit-user-drag: none;
   user-select: none;
-  touch-action: pan-x;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .modal__hint{

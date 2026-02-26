@@ -20,7 +20,7 @@
   <title>홍유석 · 박샛별 결혼합니다</title>
   <meta name="description" content="홍유석과 박샛별의 결혼식에 초대합니다. 2026년 5월 17일(일) 오후 3시, 서울한방진흥센터" />
 
-  <!-- OG (실제 주소 반영 완료) -->
+  <!-- 공유 미리보기(OG) -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="홍유석 ❤ 박샛별 결혼합니다" />
   <meta property="og:description" content="2026.05.17 (일) 15:00 · 서울한방진흥센터" />
@@ -29,25 +29,29 @@
 
   <meta name="theme-color" content="#f6f7f9" />
 
-  <!-- 요즘 스타일: Sans 중심 -->
+  <!-- 요즘 스타일: Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <link rel="stylesheet" href="styles.css?v=9" />
 </head>
 
 <body>
   <main class="wrap">
     <article class="paper" id="top">
 
-      <!-- HERO (첫 화면 구성 최적화) -->
+      <!-- HERO -->
       <header class="hero">
+        <!-- ✅ 4:5 비율 -->
         <div class="hero__photo">
           <img src="cover.jpg" alt="커버 사진" loading="eager" />
         </div>
 
         <div class="hero__inner">
+          <!-- ✅ 얇은 D-day 한 줄 -->
+          <div class="hero__dday" id="heroDday">D-</div>
+
           <h1 class="hero__names">
             <span class="hero__name">홍유석</span>
             <span class="hero__dot" aria-hidden="true"></span>
@@ -64,7 +68,7 @@
         </div>
       </header>
 
-      <!-- GREETING -->
+      <!-- ✅ 초대합니다 (원래 위치로 복구: 히어로 다음) -->
       <section class="section" id="greeting">
         <h2 class="section__title">초대합니다</h2>
 
@@ -75,22 +79,18 @@
           정중히 초대드립니다.
         </p>
 
-        <!-- ✅ 가운데 정렬 (신랑/신부 + 부모님) -->
-        <div class="family">
-          <div class="family__item">
-            <div class="family__who">
-              <span class="family__label">신랑</span>
-              <strong class="family__name">홍유석</strong>
-            </div>
-            <div class="family__parents">홍양식 · 윤옥선 의 아들</div>
+        <!-- ✅ 박스/올드한 카드 제거 + 나란히 정렬만 -->
+        <div class="familyRow" aria-label="신랑 신부 및 혼주">
+          <div class="familyCol">
+            <div class="familyCol__role">신랑</div>
+            <div class="familyCol__name">홍유석</div>
+            <div class="familyCol__parents">홍양식 · 윤옥선 의 아들</div>
           </div>
 
-          <div class="family__item">
-            <div class="family__who">
-              <span class="family__label">신부</span>
-              <strong class="family__name">박샛별</strong>
-            </div>
-            <div class="family__parents">박용기 · 임윤선 의 딸</div>
+          <div class="familyCol">
+            <div class="familyCol__role">신부</div>
+            <div class="familyCol__name">박샛별</div>
+            <div class="familyCol__parents">박용기 · 임윤선 의 딸</div>
           </div>
         </div>
       </section>
@@ -111,15 +111,10 @@
           </div>
         </div>
 
-        <div class="countdown">
-          <div class="countdown__label">D-day</div>
-          <div class="countdown__value" id="countdownText">계산 중…</div>
-        </div>
-
-        <div class="btnRow">
-          <a class="btn btn--primary btn--wide" id="addToCalendar" href="#" target="_blank" rel="noopener">
-            캘린더에 저장
-          </a>
+          <!-- ✅ 달력 이미지를 넣을 자리 -->
+          <div class="calendarImg" aria-label="2026년 5월 달력">
+            <img src="calendar.jpg" alt="2026년 5월 달력 (5월 17일 표시)" loading="lazy" />
+          </div>
         </div>
       </section>
 
@@ -133,16 +128,24 @@
           <div class="place__hint">지하철 1호선 제기동역 인근</div>
         </div>
 
+        <!-- ✅ 카카오맵 바로보기: 네가 준 퍼가기 컨테이너 그대로 삽입 -->
+        <div class="kakaoMapWrap" id="kakaoMapWrap" aria-label="카카오맵 지도 미리보기">
+          <div id="daumRoughmapContainer1772109912536" class="root_daum_roughmap root_daum_roughmap_landing"></div>
+        </div>
+
+        <!-- ✅ 퍼가기 로더 스크립트(1회만) -->
+        <script charset="UTF-8" class="daum_roughmap_loader_script"
+          src="https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js"></script>
+
         <div class="btnRow">
           <a class="btn" href="https://map.kakao.com/link/map/서울한방진흥센터,37.5806647708,127.03722638" target="_blank" rel="noopener">카카오맵</a>
           <a class="btn" href="https://map.naver.com/v5/search/서울한방진흥센터" target="_blank" rel="noopener">네이버지도</a>
         </div>
       </section>
 
-      <!-- GALLERY -->
+      <!-- GALLERY (✅ 9개) -->
       <section class="section" id="gallery">
         <h2 class="section__title">갤러리</h2>
-        <!-- ✅ "사진을 누르면..." 문구 삭제 -->
 
         <div class="gallery">
           <button class="gimg" data-full="gallery/1.jpg" data-index="0"><img src="gallery/1.jpg" alt="갤러리 1" loading="lazy"></button>
@@ -151,7 +154,12 @@
           <button class="gimg" data-full="gallery/4.jpg" data-index="3"><img src="gallery/4.jpg" alt="갤러리 4" loading="lazy"></button>
           <button class="gimg" data-full="gallery/5.jpg" data-index="4"><img src="gallery/5.jpg" alt="갤러리 5" loading="lazy"></button>
           <button class="gimg" data-full="gallery/6.jpg" data-index="5"><img src="gallery/6.jpg" alt="갤러리 6" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/7.jpg" data-index="6"><img src="gallery/7.jpg" alt="갤러리 7" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/8.jpg" data-index="7"><img src="gallery/8.jpg" alt="갤러리 8" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/9.jpg" data-index="8"><img src="gallery/9.jpg" alt="갤러리 9" loading="lazy"></button>
         </div>
+
+        
       </section>
 
       <!-- CONTACT -->
@@ -248,7 +256,7 @@
         </a>
       </section>
 
-      <!-- ✅ 손님 사진 업로드 (Dropbox) -->
+      <!-- 업로드 (Dropbox) -->
       <section class="section" id="upload">
         <h2 class="section__title">사진 업로드</h2>
 
@@ -275,26 +283,26 @@
     </article>
   </main>
 
-  <!-- 갤러리 모달 (뒤로가기 + 좌우 스와이프 슬라이드) -->
+  <!-- ✅ 갤러리 모달 (transform 기반 슬라이더) -->
   <div class="modal" id="modal" aria-hidden="true">
-    <button class="modal__bg" id="modalBg" aria-label="뒤로"></button>
+    <button class="modal__bg" id="modalBg" aria-label="닫기"></button>
 
     <div class="modal__content" role="dialog" aria-modal="true" aria-label="사진 크게 보기">
       <div class="modal__top">
-        <span class="modal__label">
-          <span id="modalCounter">1 / 1</span>
-        </span>
-        <button class="modal__back" id="modalBack" type="button" aria-label="뒤로">뒤로</button>
+        <span class="modal__label"><span id="modalCounter">1 / 1</span></span>
+
+        <!-- ✅ '뒤로' → 'X' -->
+        <button class="modal__back" id="modalBack" type="button" aria-label="닫기">×</button>
       </div>
 
-      <div class="modal__stage">
-        <div class="modal__scroller" id="modalScroller" aria-label="사진 슬라이드"></div>
+      <div class="modal__viewport" id="modalViewport" aria-label="사진 슬라이드">
+        <div class="modal__track" id="modalTrack"></div>
       </div>
 
       <div class="modal__hint">좌우로 넘겨서 사진을 볼 수 있어요</div>
     </div>
   </div>
 
-  <script src="script.js?v=7"></script>
+  <script src="script.js?v=9"></script>
 </body>
 </html>

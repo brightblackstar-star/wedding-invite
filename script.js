@@ -5,7 +5,6 @@ const WEDDING_ISO_KST = "2026-05-17T15:00:00+09:00";
  * ✅ 페이지 확대 방지(최대한)
  * - iOS Safari: gesturestart/gesturechange/gestureend 막기
  * - 더블탭 줌 억제
- * ※ 브라우저/접근성 정책에 따라 100% 완전 차단은 보장 불가
  */
 (function preventPageZoom() {
   const prevent = (e) => e.preventDefault();
@@ -17,59 +16,29 @@ const WEDDING_ISO_KST = "2026-05-17T15:00:00+09:00";
   let lastTouchEnd = 0;
   document.addEventListener("touchend", function (e) {
     const now = Date.now();
-    if (now - lastTouchEnd <= 300) {
-      e.preventDefault();
-    }
+    if (now - lastTouchEnd <= 300) e.preventDefault();
     lastTouchEnd = now;
   }, { passive: false });
 })();
 
-function formatCountdown(ms) {
-  if (ms <= 0) return "오늘은 결혼식 당일입니다 💐";
-
-  const totalSeconds = Math.floor(ms / 1000);
-  const days = Math.floor(totalSeconds / (3600 * 24));
-  const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-  return `D-${days} · ${hours}시간 ${minutes}분 남음`;
-}
-
-function updateCountdown() {
-  const el = document.getElementById("countdownText");
+/* ✅ 히어로 D-day (얇은 한 줄) */
+function updateHeroDday() {
+  const el = document.getElementById("heroDday");
   if (!el) return;
 
-  const target = new Date(WEDDING_ISO_KST).getTime();
-  const now = Date.now();
-  el.textContent = formatCountdown(target - now);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // 로컬 기준 날짜 계산(한국에서 보면 자연스럽게 동작)
+  const target = new Date(2026, 4, 17); // 2026-05-17
+  const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
+
+  if (diffDays > 0) el.textContent = `D-${diffDays}`;
+  else if (diffDays === 0) el.textContent = `D-DAY`;
+  else el.textContent = `D+${Math.abs(diffDays)}`;
 }
 
-// Google Calendar 링크 생성
-function setGoogleCalendarLink() {
-  const a = document.getElementById("addToCalendar");
-  if (!a) return;
-
-  const title = encodeURIComponent("홍유석 · 박샛별 결혼식");
-  const location = encodeURIComponent("서울한방진흥센터");
-  const details = encodeURIComponent("모바일 청첩장 링크를 확인해주세요.");
-
-  const start = new Date(WEDDING_ISO_KST);
-  const end = new Date(start.getTime() + 90 * 60 * 1000); // 1시간 30분
-
-  const toGCal = (d) => {
-    const yyyy = d.getUTCFullYear();
-    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-    const dd = String(d.getUTCDate()).padStart(2, "0");
-    const hh = String(d.getUTCHours()).padStart(2, "0");
-    const mi = String(d.getUTCMinutes()).padStart(2, "0");
-    const ss = String(d.getUTCSeconds()).padStart(2, "0");
-    return `${yyyy}${mm}${dd}T${hh}${mi}${ss}Z`;
-  };
-
-  const dates = `${toGCal(start)}/${toGCal(end)}`;
-  a.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}&details=${details}&location=${location}`;
-}
-
+/* ✅ Toast + copy */
 function showToast(msg) {
   const t = document.getElementById("toast");
   if (!t) return;
@@ -87,7 +56,6 @@ async function copyText(text) {
     }
   } catch (_) {}
 
-  // fallback (iOS Safari 포함)
   try {
     const ta = document.createElement("textarea");
     ta.value = text;
@@ -115,46 +83,130 @@ function bindCopyButtons() {
   });
 }
 
+/* ✅ 카카오맵 퍼가기 렌더링 (네가 준 값 적용) */
+function renderKakaoRoughMap() {
+  const wrap = document.getElementById("kakaoMapWrap");
+  if (!wrap) return;
+
+  const timestamp = "1772109912536";
+  const key = "ife62pktwsq";
+
+  const containerId = `daumRoughmapContainer${timestamp}`;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  let tries = 0;
+
+  const run = () => {
+    tries += 1;
+
+    if (window.daum && window.daum.roughmap && window.daum.roughmap.Lander) {
+      // wrapper 크기 기준으로 5:4 렌더
+      const w = Math.max(240, wrap.clientWidth || 300);
+      const h = Math.round(w * 4 / 5);
+
+      // 기존 내용 제거 후 렌더
+      container.innerHTML = "";
+
+      // eslint-disable-next-line no-undef
+      new daum.roughmap.Lander({
+        timestamp: String(timestamp),
+        key: String(key),
+        mapWidth: String(w),
+        mapHeight: String(h),
+      }).render();
+
+      return;
+    }
+
+    if (tries < 40) {
+      setTimeout(run, 100);
+    }
+  };
+
+  // 레이아웃 안정 후 실행
+  requestAnimationFrame(run);
+
+  // 회전/리사이즈 시 재렌더(너무 잦지 않게)
+  let resizeTimer = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      tries = 0;
+      run();
+    }, 250);
+  });
+}
+
 /**
- * ✅ 갤러리 모달
- * - 뒤로가기: history.pushState + popstate
- * - 가로 스크롤 + 스냅
- * - (중요) 한 번 스와이프에 최대 1장만 이동 + 더 천천히 이동
+ * ✅ 갤러리 모달 (transform 슬라이더)
+ * - 잔상/흔들림 방지: scroll-snap/scrollLeft 제거
+ * - 한 번 스와이프 = 최대 1장
+ * - 뒤로가기로 닫힘 유지
  */
 function bindGalleryModal() {
   const modal = document.getElementById("modal");
-  const scroller = document.getElementById("modalScroller");
   const bg = document.getElementById("modalBg");
   const backBtn = document.getElementById("modalBack");
   const counterEl = document.getElementById("modalCounter");
 
-  if (!modal || !scroller || !bg || !backBtn || !counterEl) return;
+  const viewport = document.getElementById("modalViewport");
+  const track = document.getElementById("modalTrack");
+
+  if (!modal || !bg || !backBtn || !counterEl || !viewport || !track) return;
 
   const thumbs = Array.from(document.querySelectorAll(".gimg"));
   const images = thumbs.map(b => b.getAttribute("data-full")).filter(Boolean);
   if (images.length === 0) return;
 
-  scroller.innerHTML = images.map((src, i) => {
+  // 슬라이드 생성(한 번)
+  track.innerHTML = images.map((src, i) => {
     const alt = `갤러리 ${i + 1}`;
+    // data-src로 두고 필요할 때 src를 주입(깜빡임/용량 완화)
     return `
       <div class="modal__slide" data-idx="${i}">
-        <img src="${src}" alt="${alt}" draggable="false" />
+        <img data-src="${src}" alt="${alt}" draggable="false" />
       </div>
     `;
   }).join("");
 
+  const slideImgs = Array.from(track.querySelectorAll("img"));
+
+  const ensureLoaded = (idx) => {
+    const i = Math.max(0, Math.min(images.length - 1, idx));
+    const img = slideImgs[i];
+    if (!img) return;
+    if (img.getAttribute("src")) return;
+    const src = img.getAttribute("data-src");
+    if (src) img.setAttribute("src", src);
+  };
+
+  const preloadNeighbors = (idx) => {
+    ensureLoaded(idx);
+    ensureLoaded(idx - 1);
+    ensureLoaded(idx + 1);
+  };
+
   let isOpen = false;
   let currentIndex = 0;
 
-  let rafId = 0;
-  let scrollEndTimer = 0;
-
-  // 스와이프 제어용
-  let swipeStartIndex = 0;
-  let swipeStartScrollLeft = 0;
-  let animId = 0;
+  let startX = 0;
+  let startY = 0;
+  let isDragging = false;
+  let baseTranslate = 0;
+  let currentTranslate = 0;
 
   const clamp = (n) => Math.max(0, Math.min(images.length - 1, n));
+
+  const getWidth = () => viewport.clientWidth || 1;
+
+  const setTransition = (on) => {
+    track.style.transition = on ? "transform 420ms cubic-bezier(0.22,0.61,0.36,1)" : "none";
+  };
+
+  const applyTranslate = (px) => {
+    track.style.transform = `translate3d(${px}px, 0, 0)`;
+  };
 
   const updateCounter = () => {
     counterEl.textContent = `${currentIndex + 1} / ${images.length}`;
@@ -166,55 +218,22 @@ function bindGalleryModal() {
     }
   };
 
-  const stopAnim = () => {
-    if (animId) cancelAnimationFrame(animId);
-    animId = 0;
-  };
-
-  // ✅ 천천히 이동하는 스크롤 애니메이션
-  const animateScrollTo = (targetLeft, duration = 420) => {
-    stopAnim();
-
-    const startLeft = scroller.scrollLeft;
-    const delta = targetLeft - startLeft;
-    const startTime = performance.now();
-
-    // 애니메이션 동안 스냅 간섭 최소화
-    const prevSnap = scroller.style.scrollSnapType;
-    scroller.style.scrollSnapType = "none";
-
-    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
-
-    const step = (now) => {
-      const t = Math.min(1, (now - startTime) / duration);
-      scroller.scrollLeft = startLeft + delta * easeOutCubic(t);
-
-      if (t < 1) {
-        animId = requestAnimationFrame(step);
-      } else {
-        scroller.scrollLeft = targetLeft;
-        scroller.style.scrollSnapType = prevSnap || "x mandatory";
-        animId = 0;
-      }
-    };
-
-    animId = requestAnimationFrame(step);
-  };
-
-  const scrollToIndex = (idx, mode = "auto") => {
+  const goTo = (idx, animate = true) => {
     currentIndex = clamp(idx);
     updateCounter();
     replaceModalState();
 
-    const w = scroller.clientWidth || 1;
-    const left = w * currentIndex;
+    preloadNeighbors(currentIndex);
 
-    if (mode === "auto") {
-      stopAnim();
-      scroller.scrollLeft = left;
-    } else {
-      animateScrollTo(left, 440); // 조금 더 천천히
-    }
+    const w = getWidth();
+    currentTranslate = -currentIndex * w;
+
+    setTransition(animate);
+    applyTranslate(currentTranslate);
+
+    // 다음 프레임에서 transition 복원(드래그 대비)
+    if (!animate) return;
+    requestAnimationFrame(() => {});
   };
 
   const openAt = (idx, { pushHistory = true } = {}) => {
@@ -223,10 +242,7 @@ function bindGalleryModal() {
     document.body.style.overflow = "hidden";
     isOpen = true;
 
-    currentIndex = clamp(idx);
-    updateCounter();
-
-    const st = { __modal: true, idx: currentIndex };
+    const st = { __modal: true, idx: clamp(idx) };
     if (pushHistory) {
       if (history.state && history.state.__modal) history.replaceState(st, "");
       else history.pushState(st, "");
@@ -234,7 +250,12 @@ function bindGalleryModal() {
       history.replaceState(st, "");
     }
 
-    requestAnimationFrame(() => scrollToIndex(currentIndex, "auto"));
+    currentIndex = clamp(idx);
+    updateCounter();
+    preloadNeighbors(currentIndex);
+
+    // 레이아웃 후 위치 확정
+    requestAnimationFrame(() => goTo(currentIndex, false));
   };
 
   const closeModal = () => {
@@ -242,6 +263,7 @@ function bindGalleryModal() {
     modal.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
     isOpen = false;
+    isDragging = false;
   };
 
   const requestCloseWithBack = () => {
@@ -258,85 +280,117 @@ function bindGalleryModal() {
     });
   });
 
-  // 닫기
   bg.addEventListener("click", requestCloseWithBack);
   backBtn.addEventListener("click", requestCloseWithBack);
 
-  // ✅ 스와이프 시작: 기준 인덱스/스크롤 기록
-  scroller.addEventListener("touchstart", () => {
+  // 드래그(스와이프)
+  viewport.addEventListener("touchstart", (e) => {
     if (!isOpen) return;
-    stopAnim();
-    swipeStartIndex = currentIndex;
-    swipeStartScrollLeft = scroller.scrollLeft;
+    if (!e.touches || e.touches.length !== 1) return;
+
+    setTransition(false);
+    isDragging = false;
+
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+
+    baseTranslate = currentTranslate;
   }, { passive: true });
 
-  // ✅ 스와이프 종료: "최대 1장 + 임계값" 적용
-  scroller.addEventListener("touchend", () => {
+  viewport.addEventListener("touchmove", (e) => {
+    if (!isOpen) return;
+    if (!e.touches || e.touches.length !== 1) return;
+
+    const x = e.touches[0].clientX;
+    const y = e.touches[0].clientY;
+
+    const dx = x - startX;
+    const dy = y - startY;
+
+    // 가로 스와이프 의도일 때만 잡기
+    if (!isDragging) {
+      if (Math.abs(dx) < 8) return;
+      if (Math.abs(dy) > Math.abs(dx)) return; // 세로 스크롤 우선
+      isDragging = true;
+    }
+
+    // 가로 드래그 중에는 페이지 스크롤 방지
+    e.preventDefault();
+
+    // 끝에서 약간 저항(바운스) 주기
+    let next = baseTranslate + dx;
+    const w = getWidth();
+
+    const min = -(images.length - 1) * w;
+    const max = 0;
+
+    if (next > max) next = max + (next - max) * 0.25;
+    if (next < min) next = min + (next - min) * 0.25;
+
+    currentTranslate = next;
+    applyTranslate(currentTranslate);
+  }, { passive: false });
+
+  viewport.addEventListener("touchend", (e) => {
     if (!isOpen) return;
 
-    const w = scroller.clientWidth || 1;
-    const delta = scroller.scrollLeft - swipeStartScrollLeft;
+    // 드래그가 아니면 그냥 종료
+    if (!isDragging) {
+      setTransition(true);
+      goTo(currentIndex, true);
+      return;
+    }
 
-    // 임계값을 좀 크게 잡아서 "조금만 움직여도 넘어감" 방지
-    const threshold = w * 0.26; // 26% 이상 움직여야 넘어감
+    const w = getWidth();
+    const moved = currentTranslate - (-currentIndex * w);
 
-    let target = swipeStartIndex;
-    if (delta > threshold) target = swipeStartIndex + 1;
-    else if (delta < -threshold) target = swipeStartIndex - 1;
+    // 임계값: 22% 이상 움직여야 넘어감 (너무 민감하지 않게)
+    const threshold = w * 0.22;
 
-    // ✅ 한 번에 1장만
-    target = clamp(target);
+    let nextIndex = currentIndex;
 
-    scrollToIndex(target, "slow");
+    if (moved < -threshold) nextIndex = currentIndex + 1;
+    else if (moved > threshold) nextIndex = currentIndex - 1;
+
+    // ✅ 한 번 스와이프에 최대 1장
+    nextIndex = clamp(nextIndex);
+
+    setTransition(true);
+    goTo(nextIndex, true);
+
+    isDragging = false;
   }, { passive: true });
 
-  // 스크롤 중 카운터 업데이트(드래그 중에도 표시 자연스럽게)
-  const onScroll = () => {
-    if (!isOpen) return;
-
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(() => {
-      const w = scroller.clientWidth || 1;
-      const idx = clamp(Math.round(scroller.scrollLeft / w));
-      if (idx !== currentIndex) {
-        currentIndex = idx;
-        updateCounter();
-      }
-    });
-
-    clearTimeout(scrollEndTimer);
-    scrollEndTimer = window.setTimeout(() => {
-      replaceModalState();
-    }, 160);
-  };
-
-  scroller.addEventListener("scroll", onScroll, { passive: true });
-
+  // 리사이즈/회전 시 현재 인덱스 유지
   window.addEventListener("resize", () => {
     if (!isOpen) return;
-    requestAnimationFrame(() => scrollToIndex(currentIndex, "auto"));
+    requestAnimationFrame(() => goTo(currentIndex, false));
   });
 
+  // 키보드(PC 테스트용)
   window.addEventListener("keydown", (e) => {
     if (!isOpen) return;
     if (e.key === "Escape") requestCloseWithBack();
-    if (e.key === "ArrowLeft") scrollToIndex(currentIndex - 1, "slow");
-    if (e.key === "ArrowRight") scrollToIndex(currentIndex + 1, "slow");
+    if (e.key === "ArrowLeft") goTo(currentIndex - 1, true);
+    if (e.key === "ArrowRight") goTo(currentIndex + 1, true);
   });
 
+  // 뒤로가기(popstate)
   window.addEventListener("popstate", (e) => {
     const st = e.state;
     if (st && st.__modal && typeof st.idx === "number") {
       if (!isOpen) openAt(st.idx, { pushHistory: false });
-      else scrollToIndex(st.idx, "auto");
+      else goTo(st.idx, false);
     } else {
       if (isOpen) closeModal();
     }
   });
 }
 
-updateCountdown();
-setGoogleCalendarLink();
+/* init */
+updateHeroDday();
+setInterval(updateHeroDday, 1000 * 60 * 10);
+
 bindCopyButtons();
 bindGalleryModal();
-setInterval(updateCountdown, 1000 * 30);
+renderKakaoRoughMap();
