@@ -21,7 +21,7 @@ html{ scroll-behavior:smooth; }
 
 /* ✅ 모바일 확대(가능한 범위에서) 억제: 브라우저마다 차이는 있음 */
 html, body{
-  touch-action: pan-y;
+  touch-action: manipulation; /* 확대 제스처(특히 더블탭) 억제에 도움 + 가로 스와이프 방해 줄임 */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -409,7 +409,7 @@ body{
 }
 .toast.show{ opacity: 1; }
 
-/* MODAL */
+/* MODAL (스와이프 슬라이더) */
 .modal{
   position: fixed;
   inset: 0;
@@ -426,6 +426,7 @@ body{
   inset:0;
   background: rgba(0,0,0,.62);
   border:0;
+  z-index: 0; /* ✅ 항상 뒤로 */
 }
 
 .modal__content{
@@ -437,6 +438,7 @@ body{
   border: 1px solid rgba(255,255,255,.12);
   display:flex;
   flex-direction:column;
+  z-index: 1; /* ✅ 항상 앞으로 */
 }
 
 .modal__top{
@@ -464,16 +466,38 @@ body{
 }
 
 .modal__stage{
-  position: relative;
-  padding: 12px;
+  /* 스테이지는 단순 컨테이너 */
+  padding: 0;
+}
+
+/* ✅ 핵심: “가로 스크롤 + 스냅” */
+.modal__scroller{
+  display:flex;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch; /* iOS에서 부드럽게 */
+  scroll-behavior: smooth;
+  touch-action: pan-x;               /* 가로 스와이프 허용 */
+  overscroll-behavior-x: contain;
+
+  /* 스크롤바 숨김 */
+  scrollbar-width: none;
+}
+.modal__scroller::-webkit-scrollbar{ display:none; }
+
+/* 한 장 = 화면 너비(100%) */
+.modal__slide{
+  flex: 0 0 100%;
+  scroll-snap-align: center;
   display:flex;
   align-items:center;
   justify-content:center;
-  overscroll-behavior: contain;
+  padding: 12px;
 }
 
-/* ✅ 화면보다 커지지 않게 */
-.modal__stage img{
+.modal__slide img{
   display:block;
   max-width: 100%;
   max-height: 78vh;
@@ -481,34 +505,13 @@ body{
   height: auto;
   object-fit: contain;
 
-  /* 확대/드래그 힌트 최소화(브라우저별 차이 있음) */
-  touch-action: none;
+  /* 이미지 드래그/선택 방지 */
   -webkit-user-drag: none;
   user-select: none;
-}
 
-/* 좌우 네비 버튼(스와이프 + 버튼 둘 다 지원) */
-.modalNav{
-  position:absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.22);
-  background: rgba(0,0,0,.25);
-  color: #fff;
-  font-size: 28px;
-  line-height: 1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  -webkit-tap-highlight-color: transparent;
+  /* 확대 힌트 최소화 (완전 차단은 viewport/JS가 담당) */
+  touch-action: pan-x;
 }
-.modalNav:active{ transform: translateY(-50%) scale(.98); }
-.modalNav--prev{ left: 10px; }
-.modalNav--next{ right: 10px; }
 
 .modal__hint{
   padding: 10px 12px 14px;
@@ -517,6 +520,7 @@ body{
   text-align:center;
   border-top: 1px solid rgba(255,255,255,.10);
 }
+  
 
 /* FOOTER */
 .footer{
@@ -534,3 +538,4 @@ body{
   margin: 12px 0 0;
   font-size: 12px;
   }
+
