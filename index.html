@@ -1,18 +1,7 @@
-<!-- 안전하게 확인하는 방법
-1. 실전 팁: 안전하게 수정하는 습관
-2. 크게 바꿀 땐 아래처럼 하면 “망가짐”을 거의 방지할 수 있어요.
-3. 로컬에서 수정
-4. Live Server로 확인❤
-5. GitHub에 커밋/푸시
-6. 실제 URL에서 모바일로 확인
-7. 카톡 공유 미리보기는 마지막에 점검(OG 이미지가 잘 뜨는지)-->
-
 <!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-
-  <!-- ✅ 확대 방지(최대한) -->
   <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="format-detection" content="telephone=no" />
@@ -20,7 +9,6 @@
   <title>홍유석 · 박샛별 결혼합니다</title>
   <meta name="description" content="홍유석과 박샛별의 결혼식에 초대합니다. 2026년 5월 17일(일) 오후 3시, 서울한방진흥센터" />
 
-  <!-- 공유 미리보기(OG) -->
   <meta property="og:type" content="website" />
   <meta property="og:title" content="홍유석 ❤ 박샛별 결혼합니다" />
   <meta property="og:description" content="2026.05.17 (일) 15:00 · 서울한방진흥센터" />
@@ -29,12 +17,10 @@
 
   <meta name="theme-color" content="#f6f7f9" />
 
-  <!-- 요즘 스타일: Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=9" />
+  <link rel="stylesheet" href="styles.css?v=10" />
 </head>
 
 <body>
@@ -43,14 +29,12 @@
 
       <!-- HERO -->
       <header class="hero">
-        <!-- ✅ 4:5 비율 -->
-        <div class="hero__photo">
+        <div class="hero__photoFrame">
           <img src="cover.jpg" alt="커버 사진" loading="eager" />
         </div>
 
         <div class="hero__inner">
-          <!-- ✅ 얇은 D-day 한 줄 -->
-          <div class="hero__dday" id="heroDday">D-</div>
+          <div class="hero__dday" id="heroDday">D-0</div>
 
           <h1 class="hero__names">
             <span class="hero__name">홍유석</span>
@@ -68,7 +52,7 @@
         </div>
       </header>
 
-      <!-- ✅ 초대합니다 (원래 위치로 복구: 히어로 다음) -->
+      <!-- GREETING -->
       <section class="section" id="greeting">
         <h2 class="section__title">초대합니다</h2>
 
@@ -79,18 +63,21 @@
           정중히 초대드립니다.
         </p>
 
-        <!-- ✅ 박스/올드한 카드 제거 + 나란히 정렬만 -->
-        <div class="familyRow" aria-label="신랑 신부 및 혼주">
-          <div class="familyCol">
-            <div class="familyCol__role">신랑</div>
-            <div class="familyCol__name">홍유석</div>
-            <div class="familyCol__parents">홍양식 · 윤옥선 의 아들</div>
+        <div class="familySides" aria-label="신랑 신부 및 혼주">
+          <div class="familySide familySide--groom">
+            <div class="familySide__who">
+              <span class="familySide__role">신랑</span>
+              <strong class="familySide__name">홍유석</strong>
+            </div>
+            <div class="familySide__parents">홍양식 · 윤옥선의 아들</div>
           </div>
 
-          <div class="familyCol">
-            <div class="familyCol__role">신부</div>
-            <div class="familyCol__name">박샛별</div>
-            <div class="familyCol__parents">박용기 · 임윤선 의 딸</div>
+          <div class="familySide familySide--bride">
+            <div class="familySide__who">
+              <span class="familySide__role">신부</span>
+              <strong class="familySide__name">박샛별</strong>
+            </div>
+            <div class="familySide__parents">박용기 · 임윤선의 딸</div>
           </div>
         </div>
       </section>
@@ -111,11 +98,7 @@
           </div>
         </div>
 
-          <!-- ✅ 달력 이미지를 넣을 자리 -->
-          <div class="calendarImg" aria-label="2026년 5월 달력">
-            <img src="calendar.jpg" alt="2026년 5월 달력 (5월 17일 표시)" loading="lazy" />
-          </div>
-        </div>
+        <!-- ✅ calendar.jpg (캘린더) 삭제 완료 -->
       </section>
 
       <!-- MAP -->
@@ -128,14 +111,13 @@
           <div class="place__hint">지하철 1호선 제기동역 인근</div>
         </div>
 
-        <!-- ✅ 카카오맵 바로보기: 네가 준 퍼가기 컨테이너 그대로 삽입 -->
-        <div class="kakaoMapWrap" id="kakaoMapWrap" aria-label="카카오맵 지도 미리보기">
-          <div id="daumRoughmapContainer1772109912536" class="root_daum_roughmap root_daum_roughmap_landing"></div>
+        <!-- 카카오맵 미리보기 (네모, 작게) -->
+        <div class="mapBox" aria-label="카카오맵 미리보기">
+          <div class="mapBox__embed" id="kakaoMapEmbed"></div>
+          <a class="mapBox__fallback"
+             href="https://map.kakao.com/link/map/서울한방진흥센터,37.5806647708,127.03722638"
+             target="_blank" rel="noopener">카카오맵에서 지도 열기</a>
         </div>
-
-        <!-- ✅ 퍼가기 로더 스크립트(1회만) -->
-        <script charset="UTF-8" class="daum_roughmap_loader_script"
-          src="https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js"></script>
 
         <div class="btnRow">
           <a class="btn" href="https://map.kakao.com/link/map/서울한방진흥센터,37.5806647708,127.03722638" target="_blank" rel="noopener">카카오맵</a>
@@ -143,10 +125,9 @@
         </div>
       </section>
 
-      <!-- GALLERY (✅ 9개) -->
+      <!-- GALLERY (9장) -->
       <section class="section" id="gallery">
         <h2 class="section__title">갤러리</h2>
-
         <div class="gallery">
           <button class="gimg" data-full="gallery/1.jpg" data-index="0"><img src="gallery/1.jpg" alt="갤러리 1" loading="lazy"></button>
           <button class="gimg" data-full="gallery/2.jpg" data-index="1"><img src="gallery/2.jpg" alt="갤러리 2" loading="lazy"></button>
@@ -158,31 +139,48 @@
           <button class="gimg" data-full="gallery/8.jpg" data-index="7"><img src="gallery/8.jpg" alt="갤러리 8" loading="lazy"></button>
           <button class="gimg" data-full="gallery/9.jpg" data-index="8"><img src="gallery/9.jpg" alt="갤러리 9" loading="lazy"></button>
         </div>
-
-        
       </section>
 
-      <!-- CONTACT -->
-      <section class="section" id="contact">
-        <h2 class="section__title">연락하기</h2>
+      <!-- ✅ GUESTBOOK (연락하기 → 게시판으로 교체) -->
+      <section class="section" id="guestbook">
+        <h2 class="section__title">축하 게시판</h2>
+        <p class="paragraph small">이름과 한 줄 축하글을 남겨주세요.</p>
 
-        <div class="contact">
-          <div class="contact__card">
-            <div class="contact__title">신랑 홍유석</div>
-            <div class="btnRow">
-              <a class="btn btn--primary" href="tel:01093008722">전화</a>
-              <a class="btn" href="sms:01093008722">문자</a>
-            </div>
+        <form class="gbForm" id="gbForm" autocomplete="off">
+          <div class="gbRow">
+            <label class="gbLabel" for="gbName">이름</label>
+            <input class="gbInput" id="gbName" name="name" type="text" maxlength="12" required placeholder="예: 홍길동" />
           </div>
 
-          <div class="contact__card">
-            <div class="contact__title">신부 박샛별</div>
-            <div class="btnRow">
-              <a class="btn btn--primary" href="tel:01054963875">전화</a>
-              <a class="btn" href="sms:01054963875">문자</a>
-            </div>
+          <div class="gbRow">
+            <label class="gbLabel" for="gbMsg">한 줄 축하글</label>
+            <input class="gbInput" id="gbMsg" name="message" type="text" maxlength="60" required placeholder="예: 결혼 진심으로 축하해요!" />
           </div>
-        </div>
+
+          <button class="btn btn--primary btn--wide" type="submit">남기기</button>
+          <p class="paragraph small">※ 광고/욕설/부적절한 글은 삭제될 수 있어요.</p>
+        </form>
+
+        <details class="gbAdmin">
+          <summary class="gbAdmin__summary">관리자 (삭제용)</summary>
+          <div class="gbAdmin__panel">
+            <div class="gbRow">
+              <label class="gbLabel" for="adminEmail">이메일</label>
+              <input class="gbInput" id="adminEmail" type="email" placeholder="관리자 이메일" />
+            </div>
+            <div class="gbRow">
+              <label class="gbLabel" for="adminPassword">비밀번호</label>
+              <input class="gbInput" id="adminPassword" type="password" placeholder="비밀번호" />
+            </div>
+            <div class="btnRow">
+              <button class="btn btn--primary" id="adminLogin" type="button">로그인</button>
+              <button class="btn" id="adminLogout" type="button" hidden>로그아웃</button>
+            </div>
+            <p class="paragraph small">※ 로그인하면 글 옆에 <strong>삭제</strong> 버튼이 표시됩니다.</p>
+          </div>
+        </details>
+
+        <div class="gbList" id="gbList" aria-live="polite"></div>
       </section>
 
       <!-- ACCOUNT -->
@@ -218,8 +216,9 @@
         <h2 class="section__title">FAQ</h2>
 
         <div class="faq">
+          <!-- ✅ '주차 비용' → '주차 안내' -->
           <details class="faqItem">
-            <summary>주차 비용</summary>
+            <summary>주차 안내</summary>
             <div class="faqBody">
               주차 비용은 <strong>1시간당 1,500원</strong>입니다.
             </div>
@@ -242,19 +241,7 @@
         </div>
       </section>
 
-      <!-- RSVP -->
-      <section class="section" id="rsvp">
-        <h2 class="section__title">주차 여부</h2>
-        <p class="paragraph">
-          원활한 안내를 위해 <strong>주차 이용 여부</strong>만 남겨주시면 감사하겠습니다.
-        </p>
-
-        <a class="btn btn--primary btn--wide"
-           href="https://docs.google.com/forms/d/e/1FAIpQLSd-kJ-5cfw0Nzm2katJSuj6mxkqK2j1WVQVwzz9Ym9V2FXetA/viewform?usp=publish-editor"
-           target="_blank" rel="noopener">
-          주차 여부 남기기
-        </a>
-      </section>
+      <!-- ✅ 주차 여부(RSVP) 섹션 삭제 완료 -->
 
       <!-- 업로드 (Dropbox) -->
       <section class="section" id="upload">
@@ -283,26 +270,29 @@
     </article>
   </main>
 
-  <!-- ✅ 갤러리 모달 (transform 기반 슬라이더) -->
+  <!-- 갤러리 모달 -->
   <div class="modal" id="modal" aria-hidden="true">
     <button class="modal__bg" id="modalBg" aria-label="닫기"></button>
 
     <div class="modal__content" role="dialog" aria-modal="true" aria-label="사진 크게 보기">
       <div class="modal__top">
         <span class="modal__label"><span id="modalCounter">1 / 1</span></span>
-
-        <!-- ✅ '뒤로' → 'X' -->
-        <button class="modal__back" id="modalBack" type="button" aria-label="닫기">×</button>
+        <button class="modal__close" id="modalClose" type="button" aria-label="닫기">×</button>
       </div>
 
-      <div class="modal__viewport" id="modalViewport" aria-label="사진 슬라이드">
-        <div class="modal__track" id="modalTrack"></div>
+      <div class="modal__stage">
+        <div class="modal__scroller" id="modalScroller" aria-label="사진 슬라이드"></div>
       </div>
 
       <div class="modal__hint">좌우로 넘겨서 사진을 볼 수 있어요</div>
     </div>
   </div>
 
-  <script src="script.js?v=9"></script>
+  <!-- ✅ Firebase (게시판 저장/삭제용) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+  <script src="script.js?v=10"></script>
 </body>
 </html>

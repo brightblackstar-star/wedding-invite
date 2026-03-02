@@ -1,14 +1,28 @@
 // ✅ 예식 날짜/시간 (KST)
 const WEDDING_ISO_KST = "2026-05-17T15:00:00+09:00";
 
+// ✅ 카카오맵 RoughMap (사용자가 공유해준 값)
+const KAKAO_ROUGHMAP = {
+  timestamp: "1772109912536",
+  key: "ife62pktwsq",
+};
+
+// ✅ Firebase 설정 (아래는 반드시 너의 값으로 교체해야 게시판이 동작해요)
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA7XXEdrdKCKm_-ZwBy1nk10xZMPDCH3ww",
+  authDomain: "wedding-ae80b.firebaseapp.com",
+  projectId: "wedding-ae80b",
+  appId: "1:1007496471653:web:cac00eedf8d6f6b659128c",
+};
+
+// ✅ 관리자 이메일(삭제 권한용: 보안 규칙에도 동일 이메일을 넣는 걸 권장)
+const GUESTBOOK_ADMIN_EMAIL = "bright.blackstar@gmail.com";
+
 /**
  * ✅ 페이지 확대 방지(최대한)
- * - iOS Safari: gesturestart/gesturechange/gestureend 막기
- * - 더블탭 줌 억제
  */
 (function preventPageZoom() {
   const prevent = (e) => e.preventDefault();
-
   document.addEventListener("gesturestart", prevent, { passive: false });
   document.addEventListener("gesturechange", prevent, { passive: false });
   document.addEventListener("gestureend", prevent, { passive: false });
@@ -21,24 +35,26 @@ const WEDDING_ISO_KST = "2026-05-17T15:00:00+09:00";
   }, { passive: false });
 })();
 
-/* ✅ 히어로 D-day (얇은 한 줄) */
+/* ✅ D-day (첫 화면 한 줄) */
+function calcDdayDaysLocal() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(2026, 4, 17); // 2026-05-17
+  const diffMs = target.getTime() - today.getTime();
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
+}
+
 function updateHeroDday() {
   const el = document.getElementById("heroDday");
   if (!el) return;
 
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  // 로컬 기준 날짜 계산(한국에서 보면 자연스럽게 동작)
-  const target = new Date(2026, 4, 17); // 2026-05-17
-  const diffDays = Math.round((target - today) / (1000 * 60 * 60 * 24));
-
-  if (diffDays > 0) el.textContent = `D-${diffDays}`;
-  else if (diffDays === 0) el.textContent = `D-DAY`;
-  else el.textContent = `D+${Math.abs(diffDays)}`;
+  const days = calcDdayDaysLocal();
+  if (days > 0) el.textContent = `D-${days}`;
+  else if (days === 0) el.textContent = `D-DAY`;
+  else el.textContent = `D+${Math.abs(days)}`;
 }
 
-/* ✅ Toast + copy */
+/* ✅ Toast */
 function showToast(msg) {
   const t = document.getElementById("toast");
   if (!t) return;
@@ -48,6 +64,7 @@ function showToast(msg) {
   showToast._timer = window.setTimeout(() => t.classList.remove("show"), 1400);
 }
 
+/* ✅ Copy(계좌) */
 async function copyText(text) {
   try {
     if (navigator.clipboard && window.isSecureContext) {
@@ -83,157 +100,104 @@ function bindCopyButtons() {
   });
 }
 
-/* ✅ 카카오맵 퍼가기 렌더링 (네가 준 값 적용) */
-function renderKakaoRoughMap() {
-  const wrap = document.getElementById("kakaoMapWrap");
-  if (!wrap) return;
-
-  const timestamp = "1772109912536";
-  const key = "ife62pktwsq";
-
-  const containerId = `daumRoughmapContainer${timestamp}`;
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  let tries = 0;
-
-  const run = () => {
-    tries += 1;
-
-    if (window.daum && window.daum.roughmap && window.daum.roughmap.Lander) {
-      // wrapper 크기 기준으로 5:4 렌더
-      const w = Math.max(240, wrap.clientWidth || 300);
-      const h = Math.round(w * 4 / 5);
-
-      // 기존 내용 제거 후 렌더
-      container.innerHTML = "";
-
-      // eslint-disable-next-line no-undef
-      new daum.roughmap.Lander({
-        timestamp: String(timestamp),
-        key: String(key),
-        mapWidth: String(w),
-        mapHeight: String(h),
-      }).render();
-
-      return;
-    }
-
-    if (tries < 40) {
-      setTimeout(run, 100);
-    }
-  };
-
-  // 레이아웃 안정 후 실행
-  requestAnimationFrame(run);
-
-  // 회전/리사이즈 시 재렌더(너무 잦지 않게)
-  let resizeTimer = 0;
-  window.addEventListener("resize", () => {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      tries = 0;
-      run();
-    }, 250);
+/* ✅ 카카오 RoughMap 미리보기 */
+function loadScriptOnce(src, id) {
+  return new Promise((resolve, reject) => {
+    if (document.getElementById(id)) return resolve();
+    const s = document.createElement("script");
+    s.src = src;
+    s.id = id;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("script load failed"));
+    document.head.appendChild(s);
   });
 }
 
-/**
- * ✅ 갤러리 모달 (transform 슬라이더)
- * - 잔상/흔들림 방지: scroll-snap/scrollLeft 제거
- * - 한 번 스와이프 = 최대 1장
- * - 뒤로가기로 닫힘 유지
- */
+async function renderKakaoRoughMap() {
+  const host = document.getElementById("kakaoMapEmbed");
+  const fallback = document.querySelector(".mapBox__fallback");
+  if (!host) return;
+
+  const { timestamp, key } = KAKAO_ROUGHMAP;
+
+  if (!timestamp || !key) {
+    if (fallback) fallback.style.display = "flex";
+    return;
+  }
+
+  try {
+    await loadScriptOnce(
+      "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js",
+      "kakaoRoughmapLoader"
+    );
+
+    const containerId = `daumRoughmapContainer${timestamp}`;
+    host.innerHTML = `<div id="${containerId}" class="root_daum_roughmap root_daum_roughmap_landing"></div>`;
+
+    const w = host.clientWidth || 300;
+    const h = host.clientHeight || Math.round(w * 4 / 5);
+
+    // eslint-disable-next-line no-undef
+    new daum.roughmap.Lander({
+      timestamp: String(timestamp),
+      key: String(key),
+      mapWidth: String(w),
+      mapHeight: String(h),
+    }).render();
+
+    if (fallback) fallback.style.display = "none";
+  } catch (e) {
+    if (fallback) fallback.style.display = "flex";
+  }
+}
+
+/* ✅ 갤러리 모달 */
 function bindGalleryModal() {
   const modal = document.getElementById("modal");
+  const scroller = document.getElementById("modalScroller");
   const bg = document.getElementById("modalBg");
-  const backBtn = document.getElementById("modalBack");
+  const closeBtn = document.getElementById("modalClose");
   const counterEl = document.getElementById("modalCounter");
 
-  const viewport = document.getElementById("modalViewport");
-  const track = document.getElementById("modalTrack");
-
-  if (!modal || !bg || !backBtn || !counterEl || !viewport || !track) return;
+  if (!modal || !scroller || !bg || !closeBtn || !counterEl) return;
 
   const thumbs = Array.from(document.querySelectorAll(".gimg"));
   const images = thumbs.map(b => b.getAttribute("data-full")).filter(Boolean);
   if (images.length === 0) return;
 
-  // 슬라이드 생성(한 번)
-  track.innerHTML = images.map((src, i) => {
+  scroller.innerHTML = images.map((src, i) => {
     const alt = `갤러리 ${i + 1}`;
-    // data-src로 두고 필요할 때 src를 주입(깜빡임/용량 완화)
     return `
-      <div class="modal__slide" data-idx="${i}">
-        <img data-src="${src}" alt="${alt}" draggable="false" />
+      <div class="modal__slide">
+        <img src="${src}" alt="${alt}" draggable="false" decoding="async" />
       </div>
     `;
   }).join("");
 
-  const slideImgs = Array.from(track.querySelectorAll("img"));
-
-  const ensureLoaded = (idx) => {
-    const i = Math.max(0, Math.min(images.length - 1, idx));
-    const img = slideImgs[i];
-    if (!img) return;
-    if (img.getAttribute("src")) return;
-    const src = img.getAttribute("data-src");
-    if (src) img.setAttribute("src", src);
-  };
-
-  const preloadNeighbors = (idx) => {
-    ensureLoaded(idx);
-    ensureLoaded(idx - 1);
-    ensureLoaded(idx + 1);
-  };
-
   let isOpen = false;
   let currentIndex = 0;
-
-  let startX = 0;
-  let startY = 0;
-  let isDragging = false;
-  let baseTranslate = 0;
-  let currentTranslate = 0;
+  let startIndex = 0;
+  let startLeft = 0;
 
   const clamp = (n) => Math.max(0, Math.min(images.length - 1, n));
-
-  const getWidth = () => viewport.clientWidth || 1;
-
-  const setTransition = (on) => {
-    track.style.transition = on ? "transform 420ms cubic-bezier(0.22,0.61,0.36,1)" : "none";
-  };
-
-  const applyTranslate = (px) => {
-    track.style.transform = `translate3d(${px}px, 0, 0)`;
-  };
 
   const updateCounter = () => {
     counterEl.textContent = `${currentIndex + 1} / ${images.length}`;
   };
 
-  const replaceModalState = () => {
+  const replaceState = () => {
     if (history.state && history.state.__modal) {
       history.replaceState({ __modal: true, idx: currentIndex }, "");
     }
   };
 
-  const goTo = (idx, animate = true) => {
+  const scrollToIndex = (idx, behavior = "auto") => {
     currentIndex = clamp(idx);
     updateCounter();
-    replaceModalState();
-
-    preloadNeighbors(currentIndex);
-
-    const w = getWidth();
-    currentTranslate = -currentIndex * w;
-
-    setTransition(animate);
-    applyTranslate(currentTranslate);
-
-    // 다음 프레임에서 transition 복원(드래그 대비)
-    if (!animate) return;
-    requestAnimationFrame(() => {});
+    replaceState();
+    const w = scroller.clientWidth || 1;
+    scroller.scrollTo({ left: w * currentIndex, behavior });
   };
 
   const openAt = (idx, { pushHistory = true } = {}) => {
@@ -242,7 +206,10 @@ function bindGalleryModal() {
     document.body.style.overflow = "hidden";
     isOpen = true;
 
-    const st = { __modal: true, idx: clamp(idx) };
+    currentIndex = clamp(idx);
+    updateCounter();
+
+    const st = { __modal: true, idx: currentIndex };
     if (pushHistory) {
       if (history.state && history.state.__modal) history.replaceState(st, "");
       else history.pushState(st, "");
@@ -250,12 +217,7 @@ function bindGalleryModal() {
       history.replaceState(st, "");
     }
 
-    currentIndex = clamp(idx);
-    updateCounter();
-    preloadNeighbors(currentIndex);
-
-    // 레이아웃 후 위치 확정
-    requestAnimationFrame(() => goTo(currentIndex, false));
+    requestAnimationFrame(() => scrollToIndex(currentIndex, "auto"));
   };
 
   const closeModal = () => {
@@ -263,7 +225,6 @@ function bindGalleryModal() {
     modal.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
     isOpen = false;
-    isDragging = false;
   };
 
   const requestCloseWithBack = () => {
@@ -271,7 +232,6 @@ function bindGalleryModal() {
     else closeModal();
   };
 
-  // 썸네일 클릭
   thumbs.forEach((b, fallbackIdx) => {
     b.addEventListener("click", () => {
       const idxAttr = b.getAttribute("data-index");
@@ -281,110 +241,236 @@ function bindGalleryModal() {
   });
 
   bg.addEventListener("click", requestCloseWithBack);
-  backBtn.addEventListener("click", requestCloseWithBack);
+  closeBtn.addEventListener("click", requestCloseWithBack);
 
-  // 드래그(스와이프)
-  viewport.addEventListener("touchstart", (e) => {
+  scroller.addEventListener("touchstart", () => {
     if (!isOpen) return;
-    if (!e.touches || e.touches.length !== 1) return;
-
-    setTransition(false);
-    isDragging = false;
-
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-
-    baseTranslate = currentTranslate;
+    startIndex = currentIndex;
+    startLeft = scroller.scrollLeft;
   }, { passive: true });
 
-  viewport.addEventListener("touchmove", (e) => {
+  scroller.addEventListener("touchend", () => {
     if (!isOpen) return;
-    if (!e.touches || e.touches.length !== 1) return;
+    const w = scroller.clientWidth || 1;
+    const delta = scroller.scrollLeft - startLeft;
+    const threshold = w * 0.26;
 
-    const x = e.touches[0].clientX;
-    const y = e.touches[0].clientY;
+    let target = startIndex;
+    if (delta > threshold) target = startIndex + 1;
+    else if (delta < -threshold) target = startIndex - 1;
 
-    const dx = x - startX;
-    const dy = y - startY;
-
-    // 가로 스와이프 의도일 때만 잡기
-    if (!isDragging) {
-      if (Math.abs(dx) < 8) return;
-      if (Math.abs(dy) > Math.abs(dx)) return; // 세로 스크롤 우선
-      isDragging = true;
-    }
-
-    // 가로 드래그 중에는 페이지 스크롤 방지
-    e.preventDefault();
-
-    // 끝에서 약간 저항(바운스) 주기
-    let next = baseTranslate + dx;
-    const w = getWidth();
-
-    const min = -(images.length - 1) * w;
-    const max = 0;
-
-    if (next > max) next = max + (next - max) * 0.25;
-    if (next < min) next = min + (next - min) * 0.25;
-
-    currentTranslate = next;
-    applyTranslate(currentTranslate);
-  }, { passive: false });
-
-  viewport.addEventListener("touchend", (e) => {
-    if (!isOpen) return;
-
-    // 드래그가 아니면 그냥 종료
-    if (!isDragging) {
-      setTransition(true);
-      goTo(currentIndex, true);
-      return;
-    }
-
-    const w = getWidth();
-    const moved = currentTranslate - (-currentIndex * w);
-
-    // 임계값: 22% 이상 움직여야 넘어감 (너무 민감하지 않게)
-    const threshold = w * 0.22;
-
-    let nextIndex = currentIndex;
-
-    if (moved < -threshold) nextIndex = currentIndex + 1;
-    else if (moved > threshold) nextIndex = currentIndex - 1;
-
-    // ✅ 한 번 스와이프에 최대 1장
-    nextIndex = clamp(nextIndex);
-
-    setTransition(true);
-    goTo(nextIndex, true);
-
-    isDragging = false;
+    target = clamp(target);
+    scrollToIndex(target, "smooth");
   }, { passive: true });
 
-  // 리사이즈/회전 시 현재 인덱스 유지
+  let raf = 0;
+  scroller.addEventListener("scroll", () => {
+    if (!isOpen) return;
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      const w = scroller.clientWidth || 1;
+      const idx = clamp(Math.round(scroller.scrollLeft / w));
+      if (idx !== currentIndex) {
+        currentIndex = idx;
+        updateCounter();
+      }
+    });
+  }, { passive: true });
+
   window.addEventListener("resize", () => {
     if (!isOpen) return;
-    requestAnimationFrame(() => goTo(currentIndex, false));
+    requestAnimationFrame(() => scrollToIndex(currentIndex, "auto"));
   });
 
-  // 키보드(PC 테스트용)
-  window.addEventListener("keydown", (e) => {
-    if (!isOpen) return;
-    if (e.key === "Escape") requestCloseWithBack();
-    if (e.key === "ArrowLeft") goTo(currentIndex - 1, true);
-    if (e.key === "ArrowRight") goTo(currentIndex + 1, true);
-  });
-
-  // 뒤로가기(popstate)
   window.addEventListener("popstate", (e) => {
     const st = e.state;
     if (st && st.__modal && typeof st.idx === "number") {
       if (!isOpen) openAt(st.idx, { pushHistory: false });
-      else goTo(st.idx, false);
+      else scrollToIndex(st.idx, "auto");
     } else {
       if (isOpen) closeModal();
     }
   });
+}
+
+/* ✅ 게시판(Firebase) */
+function isFirebaseConfigured() {
+  const v = FIREBASE_CONFIG;
+  if (!v) return false;
+  const vals = [v.apiKey, v.authDomain, v.projectId, v.appId];
+  if (vals.some(x => !x || String(x).includes("YOUR_"))) return false;
+  if (!GUESTBOOK_ADMIN_EMAIL || GUESTBOOK_ADMIN_EMAIL.includes("YOUR_")) return false;
+  return true;
+}
+
+function bindGuestbook() {
+  const form = document.getElementById("gbForm");
+  const nameEl = document.getElementById("gbName");
+  const msgEl = document.getElementById("gbMsg");
+  const listEl = document.getElementById("gbList");
+
+  const adminEmailEl = document.getElementById("adminEmail");
+  const adminPassEl = document.getElementById("adminPassword");
+  const loginBtn = document.getElementById("adminLogin");
+  const logoutBtn = document.getElementById("adminLogout");
+
+  if (!form || !nameEl || !msgEl || !listEl || !loginBtn || !logoutBtn) return;
+
+  // 설정 안내
+  if (!window.firebase || !isFirebaseConfigured()) {
+    listEl.innerHTML = `
+      <div class="gbItem">
+        <div class="gbMsg">
+          게시판 기능은 <strong>설정 중</strong>입니다.<br/>
+          (Firebase 설정값을 script.js의 FIREBASE_CONFIG에 넣으면 활성화됩니다.)
+        </div>
+      </div>
+    `;
+    // 입력은 막아두는 게 혼란이 적음
+    form.querySelector("button[type='submit']").disabled = true;
+    form.querySelector("button[type='submit']").style.opacity = "0.5";
+    return;
+  }
+
+  // Firebase init (중복 방지)
+  const app = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+
+  let isAdmin = false;
+  let lastDocs = []; // {id,data}
+
+  const fmt = (d) => {
+    if (!d) return "";
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}.${mm}.${dd}`;
+  };
+
+  const render = () => {
+    if (lastDocs.length === 0) {
+      listEl.innerHTML = `
+        <div class="gbItem">
+          <div class="gbMsg">아직 작성된 글이 없어요. 첫 축하글을 남겨주세요 💐</div>
+        </div>
+      `;
+      return;
+    }
+
+    listEl.innerHTML = lastDocs.map(({ id, data }) => {
+      const name = (data.name || "").toString();
+      const msg = (data.message || "").toString();
+      let dateStr = "";
+      const c = data.createdAt;
+      if (c && typeof c.toDate === "function") dateStr = fmt(c.toDate());
+      else if (typeof c === "number") dateStr = fmt(new Date(c));
+
+      return `
+        <div class="gbItem">
+          <div class="gbHead">
+            <div>
+              <span class="gbName">${escapeHtml(name)}</span>
+              <span class="gbTime"> ${dateStr ? "· " + dateStr : ""}</span>
+            </div>
+            ${isAdmin ? `<button class="gbDelete" data-id="${id}" type="button">삭제</button>` : ``}
+          </div>
+          <div class="gbMsg">${escapeHtml(msg)}</div>
+        </div>
+      `;
+    }).join("");
+
+    if (isAdmin) {
+      listEl.querySelectorAll(".gbDelete").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-id");
+          if (!id) return;
+          try {
+            await db.collection("guestbook").doc(id).delete();
+            showToast("삭제했습니다");
+          } catch (e) {
+            showToast("삭제 실패");
+          }
+        });
+      });
+    }
+  };
+
+  // 실시간 구독
+  db.collection("guestbook")
+    .orderBy("createdAt", "desc")
+    .limit(60)
+    .onSnapshot((snap) => {
+      lastDocs = snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
+      render();
+    });
+
+  // 작성
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const name = nameEl.value.trim();
+    const message = msgEl.value.trim();
+
+    if (!name || !message) return;
+    if (name.length > 12 || message.length > 60) return;
+
+    try {
+      await db.collection("guestbook").add({
+        name,
+        message,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      nameEl.value = "";
+      msgEl.value = "";
+      showToast("남겼습니다");
+    } catch (err) {
+      showToast("등록 실패");
+    }
+  });
+
+  // 관리자 로그인/로그아웃
+  auth.onAuthStateChanged((user) => {
+    isAdmin = !!(user && user.email && user.email.toLowerCase() === GUESTBOOK_ADMIN_EMAIL.toLowerCase());
+    logoutBtn.hidden = !isAdmin;
+    loginBtn.hidden = isAdmin;
+    render();
+  });
+
+  loginBtn.addEventListener("click", async () => {
+    const email = (adminEmailEl?.value || "").trim();
+    const pw = (adminPassEl?.value || "").trim();
+
+    if (!email || !pw) {
+      showToast("이메일/비밀번호를 입력해 주세요");
+      return;
+    }
+
+    try {
+      await auth.signInWithEmailAndPassword(email, pw);
+      showToast("관리자 로그인");
+    } catch (e) {
+      showToast("로그인 실패");
+    }
+  });
+
+  logoutBtn.addEventListener("click", async () => {
+    try {
+      await auth.signOut();
+      showToast("로그아웃");
+    } catch (e) {
+      showToast("로그아웃 실패");
+    }
+  });
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 /* init */
@@ -394,3 +480,4 @@ setInterval(updateHeroDday, 1000 * 60 * 10);
 bindCopyButtons();
 bindGalleryModal();
 renderKakaoRoughMap();
+bindGuestbook();
