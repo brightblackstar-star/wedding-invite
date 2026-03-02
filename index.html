@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="stylesheet" href="styles.css?v=12" />
 </head>
 
 <body>
@@ -97,8 +97,6 @@
             <div class="info__sub">서울특별시 동대문구 약령중앙로 26 (제기동)</div>
           </div>
         </div>
-
-        <!-- ✅ calendar.jpg (캘린더) 삭제 완료 -->
       </section>
 
       <!-- MAP -->
@@ -111,9 +109,11 @@
           <div class="place__hint">지하철 1호선 제기동역 인근</div>
         </div>
 
-        <!-- 카카오맵 미리보기 (네모, 작게) -->
+        <!-- ✅ 카카오맵 미리보기 (새 퍼가기 컨테이너 ID 사용) -->
         <div class="mapBox" aria-label="카카오맵 미리보기">
-          <div class="mapBox__embed" id="kakaoMapEmbed"></div>
+          <div class="mapBox__embed" id="kakaoMapEmbed">
+            <div id="daumRoughmapContainer1772431483308" class="root_daum_roughmap root_daum_roughmap_landing"></div>
+          </div>
           <a class="mapBox__fallback"
              href="https://map.kakao.com/link/map/서울한방진흥센터,37.5806647708,127.03722638"
              target="_blank" rel="noopener">카카오맵에서 지도 열기</a>
@@ -137,50 +137,8 @@
           <button class="gimg" data-full="gallery/6.jpg" data-index="5"><img src="gallery/6.jpg" alt="갤러리 6" loading="lazy"></button>
           <button class="gimg" data-full="gallery/7.jpg" data-index="6"><img src="gallery/7.jpg" alt="갤러리 7" loading="lazy"></button>
           <button class="gimg" data-full="gallery/8.jpg" data-index="7"><img src="gallery/8.jpg" alt="갤러리 8" loading="lazy"></button>
-          <button class="gimg" data-full="gallery/9.jpg" data-index="8"><img src="gallery/9.jpg" alt="갤러리 9" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/99.jpg" data-index="8"><img src="gallery/99.jpg" alt="갤러리 9" loading="lazy"></button>
         </div>
-      </section>
-
-      <!-- ✅ GUESTBOOK (연락하기 → 게시판으로 교체) -->
-      <section class="section" id="guestbook">
-        <h2 class="section__title">축하 게시판</h2>
-        <p class="paragraph small">이름과 한 줄 축하글을 남겨주세요.</p>
-
-        <form class="gbForm" id="gbForm" autocomplete="off">
-          <div class="gbRow">
-            <label class="gbLabel" for="gbName">이름</label>
-            <input class="gbInput" id="gbName" name="name" type="text" maxlength="12" required placeholder="예: 홍길동" />
-          </div>
-
-          <div class="gbRow">
-            <label class="gbLabel" for="gbMsg">한 줄 축하글</label>
-            <input class="gbInput" id="gbMsg" name="message" type="text" maxlength="60" required placeholder="예: 결혼 진심으로 축하해요!" />
-          </div>
-
-          <button class="btn btn--primary btn--wide" type="submit">남기기</button>
-          <p class="paragraph small">※ 광고/욕설/부적절한 글은 삭제될 수 있어요.</p>
-        </form>
-
-        <details class="gbAdmin">
-          <summary class="gbAdmin__summary">관리자 (삭제용)</summary>
-          <div class="gbAdmin__panel">
-            <div class="gbRow">
-              <label class="gbLabel" for="adminEmail">이메일</label>
-              <input class="gbInput" id="adminEmail" type="email" placeholder="관리자 이메일" />
-            </div>
-            <div class="gbRow">
-              <label class="gbLabel" for="adminPassword">비밀번호</label>
-              <input class="gbInput" id="adminPassword" type="password" placeholder="비밀번호" />
-            </div>
-            <div class="btnRow">
-              <button class="btn btn--primary" id="adminLogin" type="button">로그인</button>
-              <button class="btn" id="adminLogout" type="button" hidden>로그아웃</button>
-            </div>
-            <p class="paragraph small">※ 로그인하면 글 옆에 <strong>삭제</strong> 버튼이 표시됩니다.</p>
-          </div>
-        </details>
-
-        <div class="gbList" id="gbList" aria-live="polite"></div>
       </section>
 
       <!-- ACCOUNT -->
@@ -216,7 +174,6 @@
         <h2 class="section__title">FAQ</h2>
 
         <div class="faq">
-          <!-- ✅ '주차 비용' → '주차 안내' -->
           <details class="faqItem">
             <summary>주차 안내</summary>
             <div class="faqBody">
@@ -241,8 +198,6 @@
         </div>
       </section>
 
-      <!-- ✅ 주차 여부(RSVP) 섹션 삭제 완료 -->
-
       <!-- 업로드 (Dropbox) -->
       <section class="section" id="upload">
         <h2 class="section__title">사진 업로드</h2>
@@ -258,9 +213,56 @@
           드롭박스로 사진 올리기
         </a>
 
-        <p class="paragraph small">
-          ※ Dropbox 계정이 없어도 업로드할 수 있어요.
-        </p>
+        <p class="paragraph small">※ Dropbox 계정이 없어도 업로드할 수 있어요.</p>
+      </section>
+
+      <!-- ✅ GUESTBOOK (맨 마지막) -->
+      <section class="section" id="guestbook">
+        <h2 class="section__title">축하 게시판</h2>
+        <p class="paragraph small">이름과 한 줄 축하글을 남겨주세요.</p>
+
+        <form class="gbForm" id="gbForm" autocomplete="off">
+          <div class="gbRow">
+            <label class="gbLabel" for="gbName">이름</label>
+            <input class="gbInput" id="gbName" name="name" type="text" maxlength="12" required placeholder="예: 홍길동" />
+          </div>
+
+          <div class="gbRow">
+            <label class="gbLabel" for="gbMsg">한 줄 축하글</label>
+            <input class="gbInput" id="gbMsg" name="message" type="text" maxlength="60" required placeholder="예: 결혼 진심으로 축하해요!" />
+          </div>
+
+          <button class="btn btn--primary btn--wide" type="submit">남기기</button>
+        </form>
+
+        <div class="gbList" id="gbList" aria-live="polite"></div>
+
+        <!-- ✅ 더보기(최신 5개 → 확장) -->
+        <div class="gbMoreWrap">
+          <button class="btn gbMoreBtn" id="gbMoreBtn" type="button">더보기</button>
+        </div>
+
+        <!-- ✅ 관리자(더보기 아래 / 작게) -->
+        <details class="gbAdmin gbAdmin--tiny" id="gbAdmin">
+          <summary class="gbAdmin__summary">관리자</summary>
+          <div class="gbAdmin__panel">
+            <div class="gbRow">
+              <label class="gbLabel" for="adminEmail">이메일</label>
+              <input class="gbInput" id="adminEmail" type="email" placeholder="관리자 이메일" />
+            </div>
+            <div class="gbRow">
+              <label class="gbLabel" for="adminPassword">비밀번호</label>
+              <input class="gbInput" id="adminPassword" type="password" placeholder="비밀번호" />
+            </div>
+
+            <div class="btnRow">
+              <button class="btn btn--primary btn--compact" id="adminLogin" type="button">로그인</button>
+              <button class="btn btn--compact" id="adminLogout" type="button" hidden>로그아웃</button>
+            </div>
+
+            <p class="paragraph small gbAdminHint">※ 로그인하면 글 옆에 <strong>삭제</strong> 버튼이 표시됩니다.</p>
+          </div>
+        </details>
       </section>
 
       <footer class="footer">
@@ -288,11 +290,15 @@
     </div>
   </div>
 
-  <!-- ✅ Firebase (게시판 저장/삭제용) -->
+  <!-- ✅ 카카오맵 로더(퍼가기 안내대로 “한 번만” 삽입) -->
+  <script charset="UTF-8" class="daum_roughmap_loader_script"
+          src="https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js"></script>
+
+  <!-- ✅ Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
-  <script src="script.js?v=10"></script>
+  <script src="script.js?v=12"></script>
 </body>
 </html>

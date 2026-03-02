@@ -159,17 +159,29 @@ body{
   background: var(--line);
 }
 
-.familySide{ min-width: 0; }
-.familySide--groom{ text-align: left; padding-right: 10px; }
-.familySide--bride{ text-align: right; padding-left: 10px; }
+/* ✅ (수정) 신랑/신부 칼럼은 좌/우로 유지하되, 내용은 가운데 정렬로 통일 */
+.familySide--groom,
+.familySide--bride{
+  text-align: center;
+  padding: 0 10px;
+}
 
 .familySide__who{
   display:flex;
   gap: 10px;
   align-items: baseline;
-  justify-content: flex-start;
+  justify-content: center;
 }
-.familySide--bride .familySide__who{ justify-content: flex-end; }
+
+/* 기존 브라이드만 따로 오른쪽 정렬하던 부분 무효화 */
+.familySide--bride .familySide__who{
+  justify-content: center;
+}
+
+/* 부모님 줄도 확실히 가운데 */
+.familySide__parents{
+  text-align: center;
+}
 
 .familySide__role{
   color: var(--muted);
@@ -594,4 +606,58 @@ body{
 .footer__copy{
   margin: 12px 0 0;
   font-size: 12px;
+}
+/* ====== (추가) 게시판: 더보기 + 관리자 작게 ====== */
+.gbMoreWrap{
+  display:flex;
+  justify-content:center;
+  margin-top: 12px;
+}
+
+.gbMoreBtn{
+  height: 38px;
+  border-radius: 999px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+.btn--compact{
+  height: 34px;
+  border-radius: 12px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+/* 관리자 영역: 작게/덜 튀게 */
+.gbAdmin--tiny{
+  margin-top: 10px;
+  border: 1px solid rgba(17,24,39,.10);
+  border-radius: 14px;
+  background: rgba(17,24,39,.015);
+  overflow:hidden;
+}
+
+.gbAdmin--tiny .gbAdmin__summary{
+  padding: 10px 12px;
+  font-size: 12px;
+  color: rgba(107,114,128,.95);
+  font-weight: 700;
+}
+
+.gbAdmin--tiny .gbAdmin__panel{
+  padding: 10px 12px 12px;
+}
+
+.gbAdminHint{
+  margin-top: 8px;
+}
+
+/* 카카오맵 iframe이 wrapper 안에서 꽉 차도록 조금 더 강하게 */
+.mapBox__embed .root_daum_roughmap{
+  width: 100% !important;
+  height: 100% !important;
+}
+.mapBox__embed .root_daum_roughmap iframe{
+  width: 100% !important;
+  height: 100% !important;
 }

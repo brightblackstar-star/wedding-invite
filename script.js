@@ -1,26 +1,29 @@
 // ✅ 예식 날짜/시간 (KST)
 const WEDDING_ISO_KST = "2026-05-17T15:00:00+09:00";
 
-// ✅ 카카오맵 RoughMap (사용자가 공유해준 값)
+// ✅ 카카오맵 RoughMap (사용자가 제공한 최신 값)
 const KAKAO_ROUGHMAP = {
-  timestamp: "1772109912536",
-  key: "ife62pktwsq",
+  timestamp: "1772431483308",
+  key: "ikwriqe8rf6",
 };
 
-// ✅ Firebase 설정 (아래는 반드시 너의 값으로 교체해야 게시판이 동작해요)
+// ✅ Firebase 설정 (사용자 제공)
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyA7XXEdrdKCKm_-ZwBy1nk10xZMPDCH3ww",
   authDomain: "wedding-ae80b.firebaseapp.com",
   projectId: "wedding-ae80b",
+  storageBucket: "wedding-ae80b.firebasestorage.app",
+  messagingSenderId: "1007496471653",
   appId: "1:1007496471653:web:cac00eedf8d6f6b659128c",
+  measurementId: "G-5X86K0NZTZ",
 };
 
-// ✅ 관리자 이메일(삭제 권한용: 보안 규칙에도 동일 이메일을 넣는 걸 권장)
+// ✅ 관리자 이메일
 const GUESTBOOK_ADMIN_EMAIL = "bright.blackstar@gmail.com";
 
-/**
- * ✅ 페이지 확대 방지(최대한)
- */
+// 게시판: 처음 5개 + 더보기(5개씩)
+const GUESTBOOK_STEP = 5;
+
 (function preventPageZoom() {
   const prevent = (e) => e.preventDefault();
   document.addEventListener("gesturestart", prevent, { passive: false });
@@ -35,7 +38,7 @@ const GUESTBOOK_ADMIN_EMAIL = "bright.blackstar@gmail.com";
   }, { passive: false });
 })();
 
-/* ✅ D-day (첫 화면 한 줄) */
+/* ✅ D-day */
 function calcDdayDaysLocal() {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -64,7 +67,7 @@ function showToast(msg) {
   showToast._timer = window.setTimeout(() => t.classList.remove("show"), 1400);
 }
 
-/* ✅ Copy(계좌) */
+/* ✅ Copy */
 async function copyText(text) {
   try {
     if (navigator.clipboard && window.isSecureContext) {
@@ -100,43 +103,25 @@ function bindCopyButtons() {
   });
 }
 
-/* ✅ 카카오 RoughMap 미리보기 */
-function loadScriptOnce(src, id) {
-  return new Promise((resolve, reject) => {
-    if (document.getElementById(id)) return resolve();
-    const s = document.createElement("script");
-    s.src = src;
-    s.id = id;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("script load failed"));
-    document.head.appendChild(s);
-  });
-}
-
-async function renderKakaoRoughMap() {
-  const host = document.getElementById("kakaoMapEmbed");
-  const fallback = document.querySelector(".mapBox__fallback");
-  if (!host) return;
-
+/* ✅ 카카오 RoughMap: “안 뜨는 경우” 대비해서 daum 로딩까지 재시도 */
+function renderKakaoRoughMap() {
   const { timestamp, key } = KAKAO_ROUGHMAP;
+  const box = document.querySelector(".mapBox");
+  const container = document.getElementById(`daumRoughmapContainer${timestamp}`);
+  const fallback = document.querySelector(".mapBox__fallback");
 
-  if (!timestamp || !key) {
-    if (fallback) fallback.style.display = "flex";
-    return;
-  }
+  if (!box || !container) return;
 
-  try {
-    await loadScriptOnce(
-      "https://ssl.daumcdn.net/dmaps/map_js_init/roughmapLoader.js",
-      "kakaoRoughmapLoader"
-    );
+  const tryRender = () => {
+    if (!(window.daum && window.daum.roughmap && window.daum.roughmap.Lander)) {
+      return false;
+    }
 
-    const containerId = `daumRoughmapContainer${timestamp}`;
-    host.innerHTML = `<div id="${containerId}" class="root_daum_roughmap root_daum_roughmap_landing"></div>`;
+    // 기존 렌더 제거
+    container.innerHTML = "";
 
-    const w = host.clientWidth || 300;
-    const h = host.clientHeight || Math.round(w * 4 / 5);
+    const w = Math.max(240, box.clientWidth || 300);
+    const h = Math.round(w * 4 / 5); // 5:4
 
     // eslint-disable-next-line no-undef
     new daum.roughmap.Lander({
@@ -146,10 +131,33 @@ async function renderKakaoRoughMap() {
       mapHeight: String(h),
     }).render();
 
-    if (fallback) fallback.style.display = "none";
-  } catch (e) {
-    if (fallback) fallback.style.display = "flex";
-  }
+    // iframe 생성 여부로 fallback 처리
+    setTimeout(() => {
+      const hasFrame = !!container.querySelector("iframe");
+      if (fallback) fallback.style.display = hasFrame ? "none" : "flex";
+    }, 450);
+
+    return true;
+  };
+
+  let tries = 0;
+  const tick = () => {
+    tries += 1;
+    if (tryRender()) return;
+    if (tries < 40) setTimeout(tick, 120);
+    else if (fallback) fallback.style.display = "flex";
+  };
+  tick();
+
+  // 리사이즈 시 재렌더(너무 자주 X)
+  let resizeTimer = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      tries = 0;
+      tick();
+    }, 250);
+  }, { passive: true });
 }
 
 /* ✅ 갤러리 모달 */
@@ -293,52 +301,36 @@ function bindGalleryModal() {
   });
 }
 
-/* ✅ 게시판(Firebase) */
-function isFirebaseConfigured() {
-  const v = FIREBASE_CONFIG;
-  if (!v) return false;
-  const vals = [v.apiKey, v.authDomain, v.projectId, v.appId];
-  if (vals.some(x => !x || String(x).includes("YOUR_"))) return false;
-  if (!GUESTBOOK_ADMIN_EMAIL || GUESTBOOK_ADMIN_EMAIL.includes("YOUR_")) return false;
-  return true;
-}
-
+/* ✅ 게시판(Firebase): 최신 5개 + 더보기로 limit 확장 */
 function bindGuestbook() {
   const form = document.getElementById("gbForm");
   const nameEl = document.getElementById("gbName");
   const msgEl = document.getElementById("gbMsg");
   const listEl = document.getElementById("gbList");
+  const moreBtn = document.getElementById("gbMoreBtn");
 
   const adminEmailEl = document.getElementById("adminEmail");
   const adminPassEl = document.getElementById("adminPassword");
   const loginBtn = document.getElementById("adminLogin");
   const logoutBtn = document.getElementById("adminLogout");
 
-  if (!form || !nameEl || !msgEl || !listEl || !loginBtn || !logoutBtn) return;
+  if (!form || !nameEl || !msgEl || !listEl || !moreBtn || !loginBtn || !logoutBtn) return;
 
-  // 설정 안내
-  if (!window.firebase || !isFirebaseConfigured()) {
-    listEl.innerHTML = `
-      <div class="gbItem">
-        <div class="gbMsg">
-          게시판 기능은 <strong>설정 중</strong>입니다.<br/>
-          (Firebase 설정값을 script.js의 FIREBASE_CONFIG에 넣으면 활성화됩니다.)
-        </div>
-      </div>
-    `;
-    // 입력은 막아두는 게 혼란이 적음
-    form.querySelector("button[type='submit']").disabled = true;
-    form.querySelector("button[type='submit']").style.opacity = "0.5";
+  if (!window.firebase) {
+    listEl.innerHTML = `<div class="gbItem"><div class="gbMsg">게시판 로딩 실패(Firebase 스크립트).</div></div>`;
     return;
   }
 
-  // Firebase init (중복 방지)
-  const app = firebase.apps && firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+  const app = (firebase.apps && firebase.apps.length) ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
   const db = firebase.firestore();
   const auth = firebase.auth();
 
   let isAdmin = false;
-  let lastDocs = []; // {id,data}
+  let limitCount = GUESTBOOK_STEP;
+  let unsub = null;
+
+  // ✅ 더보기 클릭 후 로드 완료되면 “아래로 자연스럽게” 내려가게 하는 플래그
+  let pendingAutoScroll = false;
 
   const fmt = (d) => {
     if (!d) return "";
@@ -348,8 +340,8 @@ function bindGuestbook() {
     return `${yyyy}.${mm}.${dd}`;
   };
 
-  const render = () => {
-    if (lastDocs.length === 0) {
+  const render = (docs) => {
+    if (!docs || docs.length === 0) {
       listEl.innerHTML = `
         <div class="gbItem">
           <div class="gbMsg">아직 작성된 글이 없어요. 첫 축하글을 남겨주세요 💐</div>
@@ -358,24 +350,27 @@ function bindGuestbook() {
       return;
     }
 
-    listEl.innerHTML = lastDocs.map(({ id, data }) => {
-      const name = (data.name || "").toString();
-      const msg = (data.message || "").toString();
+    listEl.innerHTML = docs.map((doc) => {
+      const data = doc.data() || {};
+      const id = doc.id;
+
+      const name = escapeHtml((data.name || "").toString());
+      const msg = escapeHtml((data.message || "").toString());
+
       let dateStr = "";
       const c = data.createdAt;
       if (c && typeof c.toDate === "function") dateStr = fmt(c.toDate());
-      else if (typeof c === "number") dateStr = fmt(new Date(c));
 
       return `
         <div class="gbItem">
           <div class="gbHead">
             <div>
-              <span class="gbName">${escapeHtml(name)}</span>
-              <span class="gbTime"> ${dateStr ? "· " + dateStr : ""}</span>
+              <span class="gbName">${name}</span>
+              <span class="gbTime">${dateStr ? "· " + dateStr : ""}</span>
             </div>
             ${isAdmin ? `<button class="gbDelete" data-id="${id}" type="button">삭제</button>` : ``}
           </div>
-          <div class="gbMsg">${escapeHtml(msg)}</div>
+          <div class="gbMsg">${msg}</div>
         </div>
       `;
     }).join("");
@@ -396,14 +391,71 @@ function bindGuestbook() {
     }
   };
 
-  // 실시간 구독
-  db.collection("guestbook")
-    .orderBy("createdAt", "desc")
-    .limit(60)
-    .onSnapshot((snap) => {
-      lastDocs = snap.docs.map((doc) => ({ id: doc.id, data: doc.data() }));
-      render();
-    });
+  const updateMoreVisibility = (docs) => {
+    // 더보기 표시 조건
+    if (docs.length < GUESTBOOK_STEP) {
+      moreBtn.hidden = true;
+    } else if (docs.length < limitCount) {
+      // limitCount를 늘렸는데 그만큼 못 채우면 더 이상 없음
+      moreBtn.hidden = true;
+    } else {
+      moreBtn.hidden = false;
+    }
+  };
+
+  const subscribe = () => {
+    if (unsub) unsub();
+
+    listEl.setAttribute("aria-busy", "true");
+
+    unsub = db.collection("guestbook")
+      .orderBy("createdAt", "desc")
+      .limit(limitCount)
+      .onSnapshot((snap) => {
+        listEl.setAttribute("aria-busy", "false");
+
+        const docs = snap.docs;
+        render(docs);
+        updateMoreVisibility(docs);
+
+        // 더보기 버튼 상태 복구
+        moreBtn.disabled = false;
+        moreBtn.textContent = "더보기";
+
+        // ✅ “더보기” 누른 뒤에만: 아래로 자연스럽게 내려가기
+        if (pendingAutoScroll) {
+          pendingAutoScroll = false;
+
+          requestAnimationFrame(() => {
+            const target = moreBtn.hidden
+              ? listEl.lastElementChild   // 더보기 없어졌으면 리스트 마지막 글로
+              : moreBtn;                  // 더보기 있으면 버튼 위치로
+
+            if (target && target.scrollIntoView) {
+              target.scrollIntoView({ behavior: "smooth", block: "end" });
+            }
+          });
+        }
+      }, () => {
+        listEl.setAttribute("aria-busy", "false");
+        listEl.innerHTML = `<div class="gbItem"><div class="gbMsg">게시판을 불러오지 못했어요.</div></div>`;
+        moreBtn.hidden = true;
+        moreBtn.disabled = false;
+        moreBtn.textContent = "더보기";
+        pendingAutoScroll = false;
+      });
+  };
+
+  // ✅ 더보기
+  moreBtn.addEventListener("click", () => {
+    pendingAutoScroll = true;        // << 핵심
+    limitCount += GUESTBOOK_STEP;
+
+    moreBtn.disabled = true;
+    moreBtn.textContent = "불러오는 중…";
+
+    subscribe();
+  });
 
   // 작성
   form.addEventListener("submit", async (e) => {
@@ -429,17 +481,19 @@ function bindGuestbook() {
     }
   });
 
-  // 관리자 로그인/로그아웃
+  // 관리자 로그인 상태
   auth.onAuthStateChanged((user) => {
     isAdmin = !!(user && user.email && user.email.toLowerCase() === GUESTBOOK_ADMIN_EMAIL.toLowerCase());
     logoutBtn.hidden = !isAdmin;
     loginBtn.hidden = isAdmin;
-    render();
+
+    // 관리자 상태 변화 시 삭제 버튼 표시 반영
+    subscribe();
   });
 
   loginBtn.addEventListener("click", async () => {
-    const email = (adminEmailEl?.value || "").trim();
-    const pw = (adminPassEl?.value || "").trim();
+    const email = (adminEmailEl.value || "").trim();
+    const pw = (adminPassEl.value || "").trim();
 
     if (!email || !pw) {
       showToast("이메일/비밀번호를 입력해 주세요");
@@ -462,6 +516,10 @@ function bindGuestbook() {
       showToast("로그아웃 실패");
     }
   });
+
+  // 시작
+  moreBtn.hidden = true;
+  subscribe();
 }
 
 function escapeHtml(s) {
