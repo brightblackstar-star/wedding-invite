@@ -23,6 +23,7 @@ const GUESTBOOK_ADMIN_EMAIL = "bright.blackstar@gmail.com";
 
 // 게시판: 처음 5개 + 더보기(5개씩)
 const GUESTBOOK_STEP = 5;
+const GUESTBOOK_EXPANDED_LIMIT = 20; // 더보기 눌렀을 때 최대 200개까지 보여줌(원하면 숫자 변경)
 
 (function preventPageZoom() {
   const prevent = (e) => e.preventDefault();
@@ -318,19 +319,25 @@ function bindGuestbook() {
 
   if (!window.firebase) {
     listEl.innerHTML = `<div class="gbItem"><div class="gbMsg">게시판 로딩 실패(Firebase 스크립트).</div></div>`;
+    moreBtn.hidden = true;
     return;
   }
 
-  const app = (firebase.apps && firebase.apps.length) ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+  // Firebase init
+  (firebase.apps && firebase.apps.length) ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
   const db = firebase.firestore();
   const auth = firebase.auth();
 
   let isAdmin = false;
+
+  // ✅ 토글 상태: 접힘(5개) / 펼침(많이)
+  let isExpanded = false;
   let limitCount = GUESTBOOK_STEP;
+
   let unsub = null;
 
-  // ✅ 더보기 클릭 후 로드 완료되면 “아래로 자연스럽게” 내려가게 하는 플래그
-  let pendingAutoScroll = false;
+  // ✅ 더보기/접기 클릭 후 스크롤 자연스럽게 이동
+  let pendingScroll = null; // "expand" | "collapse" | null
 
   const fmt = (d) => {
     if (!d) return "";
@@ -391,15 +398,17 @@ function bindGuestbook() {
     }
   };
 
-  const updateMoreVisibility = (docs) => {
-    // 더보기 표시 조건
-    if (docs.length < GUESTBOOK_STEP) {
-      moreBtn.hidden = true;
-    } else if (docs.length < limitCount) {
-      // limitCount를 늘렸는데 그만큼 못 채우면 더 이상 없음
-      moreBtn.hidden = true;
+  const setMoreButtonUI = ({ hasMore, shownCount }) => {
+    // 버튼 텍스트
+    moreBtn.textContent = isExpanded ? "접기" : "더보기";
+
+    // 버튼 표시 조건
+    // - 접힘 상태: 더 있으면(hasMore) 보여줌
+    // - 펼침 상태: 5개 초과가 실제로 있을 때만 접기 보여줌
+    if (!isExpanded) {
+      moreBtn.hidden = !hasMore;
     } else {
-      moreBtn.hidden = false;
+      moreBtn.hidden = !(shownCount > GUESTBOOK_STEP);
     }
   };
 
@@ -408,31 +417,39 @@ function bindGuestbook() {
 
     listEl.setAttribute("aria-busy", "true");
 
+    // ✅ "정확히 더 있는지" 판단하려고 limit+1로 받아서 체크
+    const queryLimit = limitCount + 1;
+
     unsub = db.collection("guestbook")
       .orderBy("createdAt", "desc")
-      .limit(limitCount)
+      .limit(queryLimit)
       .onSnapshot((snap) => {
         listEl.setAttribute("aria-busy", "false");
 
-        const docs = snap.docs;
-        render(docs);
-        updateMoreVisibility(docs);
+        const docsAll = snap.docs;
+        const hasMore = docsAll.length > limitCount;
+        const viewDocs = docsAll.slice(0, limitCount);
 
-        // 더보기 버튼 상태 복구
+        render(viewDocs);
+        setMoreButtonUI({ hasMore, shownCount: viewDocs.length });
+
+        // 로딩 상태 해제
         moreBtn.disabled = false;
-        moreBtn.textContent = "더보기";
+        moreBtn.textContent = isExpanded ? "접기" : "더보기";
 
-        // ✅ “더보기” 누른 뒤에만: 아래로 자연스럽게 내려가기
-        if (pendingAutoScroll) {
-          pendingAutoScroll = false;
+        // ✅ 클릭 후 스크롤 이동
+        if (pendingScroll) {
+          const mode = pendingScroll;
+          pendingScroll = null;
 
           requestAnimationFrame(() => {
-            const target = moreBtn.hidden
-              ? listEl.lastElementChild   // 더보기 없어졌으면 리스트 마지막 글로
-              : moreBtn;                  // 더보기 있으면 버튼 위치로
-
-            if (target && target.scrollIntoView) {
-              target.scrollIntoView({ behavior: "smooth", block: "end" });
+            if (mode === "expand") {
+              const target = moreBtn.hidden ? listEl.lastElementChild : moreBtn;
+              if (target?.scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "end" });
+            } else if (mode === "collapse") {
+              const section = document.getElementById("guestbook");
+              const target = section || listEl;
+              if (target?.scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "start" });
             }
           });
         }
@@ -442,19 +459,29 @@ function bindGuestbook() {
         moreBtn.hidden = true;
         moreBtn.disabled = false;
         moreBtn.textContent = "더보기";
-        pendingAutoScroll = false;
+        pendingScroll = null;
       });
   };
 
-  // ✅ 더보기
+  // ✅ 더보기/접기 토글
   moreBtn.addEventListener("click", () => {
-    pendingAutoScroll = true;        // << 핵심
-    limitCount += GUESTBOOK_STEP;
-
     moreBtn.disabled = true;
-    moreBtn.textContent = "불러오는 중…";
 
-    subscribe();
+    if (!isExpanded) {
+      // 더보기 → 펼침
+      isExpanded = true;
+      limitCount = GUESTBOOK_EXPANDED_LIMIT;
+      pendingScroll = "expand";
+      moreBtn.textContent = "불러오는 중…";
+      subscribe();
+    } else {
+      // 접기 → 5개만
+      isExpanded = false;
+      limitCount = GUESTBOOK_STEP;
+      pendingScroll = "collapse";
+      moreBtn.textContent = "접는 중…";
+      subscribe();
+    }
   });
 
   // 작성
@@ -487,7 +514,7 @@ function bindGuestbook() {
     logoutBtn.hidden = !isAdmin;
     loginBtn.hidden = isAdmin;
 
-    // 관리자 상태 변화 시 삭제 버튼 표시 반영
+    // 삭제 버튼 표시 반영 위해 재구독
     subscribe();
   });
 
