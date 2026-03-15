@@ -23,7 +23,7 @@ const GUESTBOOK_ADMIN_EMAIL = "bright.blackstar@gmail.com";
 
 // 게시판: 처음 5개 + 더보기(5개씩)
 const GUESTBOOK_STEP = 5;
-const GUESTBOOK_EXPANDED_LIMIT = 20; // 더보기 눌렀을 때 최대 200개까지 보여줌(원하면 숫자 변경)
+const GUESTBOOK_EXPANDED_LIMIT = 30; // 더보기 눌렀을 때 최대 200개까지 보여줌(원하면 숫자 변경)
 
 (function preventPageZoom() {
   const prevent = (e) => e.preventDefault();
@@ -323,20 +323,15 @@ function bindGuestbook() {
     return;
   }
 
-  // Firebase init
   (firebase.apps && firebase.apps.length) ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
   const db = firebase.firestore();
   const auth = firebase.auth();
 
   let isAdmin = false;
-
-  // ✅ 토글 상태: 접힘(5개) / 펼침(많이)
   let isExpanded = false;
   let limitCount = GUESTBOOK_STEP;
-
   let unsub = null;
 
-  // ✅ 더보기/접기 클릭 후 스크롤 자연스럽게 이동
   let pendingScroll = null; // "expand" | "collapse" | null
 
   const fmt = (d) => {
@@ -349,6 +344,7 @@ function bindGuestbook() {
 
   const render = (docs) => {
     if (!docs || docs.length === 0) {
+      listEl.classList.remove("is-expanded");
       listEl.innerHTML = `
         <div class="gbItem">
           <div class="gbMsg">아직 작성된 글이 없어요. 첫 축하글을 남겨주세요 💐</div>
@@ -356,6 +352,8 @@ function bindGuestbook() {
       `;
       return;
     }
+
+    listEl.classList.toggle("is-expanded", isExpanded && docs.length > GUESTBOOK_STEP);
 
     listEl.innerHTML = docs.map((doc) => {
       const data = doc.data() || {};
@@ -398,18 +396,19 @@ function bindGuestbook() {
     }
   };
 
-  const setMoreButtonUI = ({ hasMore, shownCount }) => {
-    // 버튼 텍스트
-    moreBtn.textContent = isExpanded ? "접기" : "더보기";
-
-    // 버튼 표시 조건
-    // - 접힘 상태: 더 있으면(hasMore) 보여줌
-    // - 펼침 상태: 5개 초과가 실제로 있을 때만 접기 보여줌
+  const updateMoreButton = (fetchedCount) => {
+    // 접힌 상태: 5개 초과면 "더보기"
     if (!isExpanded) {
-      moreBtn.hidden = !hasMore;
-    } else {
-      moreBtn.hidden = !(shownCount > GUESTBOOK_STEP);
+      const hasMoreThanFive = fetchedCount > GUESTBOOK_STEP;
+      moreBtn.hidden = !hasMoreThanFive;
+      moreBtn.textContent = "더보기";
+      return;
     }
+
+    // 펼친 상태: 5개 초과면 "접기"
+    const hasMoreThanFive = fetchedCount > GUESTBOOK_STEP;
+    moreBtn.hidden = !hasMoreThanFive;
+    moreBtn.textContent = "접기";
   };
 
   const subscribe = () => {
@@ -417,8 +416,8 @@ function bindGuestbook() {
 
     listEl.setAttribute("aria-busy", "true");
 
-    // ✅ "정확히 더 있는지" 판단하려고 limit+1로 받아서 체크
-    const queryLimit = limitCount + 1;
+    // 접힘이면 6개까지 불러와서 "더보기 필요 여부" 판단
+    const queryLimit = isExpanded ? GUESTBOOK_EXPANDED_LIMIT : (GUESTBOOK_STEP + 1);
 
     unsub = db.collection("guestbook")
       .orderBy("createdAt", "desc")
@@ -427,34 +426,38 @@ function bindGuestbook() {
         listEl.setAttribute("aria-busy", "false");
 
         const docsAll = snap.docs;
-        const hasMore = docsAll.length > limitCount;
-        const viewDocs = docsAll.slice(0, limitCount);
+        const docsToShow = isExpanded
+          ? docsAll.slice(0, GUESTBOOK_EXPANDED_LIMIT)
+          : docsAll.slice(0, GUESTBOOK_STEP);
 
-        render(viewDocs);
-        setMoreButtonUI({ hasMore, shownCount: viewDocs.length });
+        render(docsToShow);
+        updateMoreButton(docsAll.length);
 
-        // 로딩 상태 해제
         moreBtn.disabled = false;
-        moreBtn.textContent = isExpanded ? "접기" : "더보기";
 
-        // ✅ 클릭 후 스크롤 이동
         if (pendingScroll) {
           const mode = pendingScroll;
           pendingScroll = null;
 
           requestAnimationFrame(() => {
             if (mode === "expand") {
+              // 펼친 뒤에는 리스트 아래/버튼 쪽으로 부드럽게
               const target = moreBtn.hidden ? listEl.lastElementChild : moreBtn;
-              if (target?.scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "end" });
+              if (target?.scrollIntoView) {
+                target.scrollIntoView({ behavior: "smooth", block: "end" });
+              }
             } else if (mode === "collapse") {
+              // 접은 뒤에는 게시판 시작으로
               const section = document.getElementById("guestbook");
-              const target = section || listEl;
-              if (target?.scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "start" });
+              if (section?.scrollIntoView) {
+                section.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
             }
           });
         }
       }, () => {
         listEl.setAttribute("aria-busy", "false");
+        listEl.classList.remove("is-expanded");
         listEl.innerHTML = `<div class="gbItem"><div class="gbMsg">게시판을 불러오지 못했어요.</div></div>`;
         moreBtn.hidden = true;
         moreBtn.disabled = false;
@@ -463,25 +466,23 @@ function bindGuestbook() {
       });
   };
 
-  // ✅ 더보기/접기 토글
+  // ✅ 더보기 ↔ 접기 토글
   moreBtn.addEventListener("click", () => {
     moreBtn.disabled = true;
 
     if (!isExpanded) {
-      // 더보기 → 펼침
       isExpanded = true;
       limitCount = GUESTBOOK_EXPANDED_LIMIT;
       pendingScroll = "expand";
       moreBtn.textContent = "불러오는 중…";
-      subscribe();
     } else {
-      // 접기 → 5개만
       isExpanded = false;
       limitCount = GUESTBOOK_STEP;
       pendingScroll = "collapse";
       moreBtn.textContent = "접는 중…";
-      subscribe();
     }
+
+    subscribe();
   });
 
   // 작성
@@ -513,8 +514,6 @@ function bindGuestbook() {
     isAdmin = !!(user && user.email && user.email.toLowerCase() === GUESTBOOK_ADMIN_EMAIL.toLowerCase());
     logoutBtn.hidden = !isAdmin;
     loginBtn.hidden = isAdmin;
-
-    // 삭제 버튼 표시 반영 위해 재구독
     subscribe();
   });
 
@@ -544,7 +543,6 @@ function bindGuestbook() {
     }
   });
 
-  // 시작
   moreBtn.hidden = true;
   subscribe();
 }

@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css?v=13" />
+  <link rel="stylesheet" href="styles.css?v=14" />
 </head>
 
 <body>
@@ -129,39 +129,71 @@
       <section class="section" id="gallery">
         <h2 class="section__title">갤러리</h2>
         <div class="gallery">
-          <button class="gimg" data-full="gallery/1.jpg" data-index="0"><img src="gallery/1.jpg" alt="갤러리 1" loading="lazy"></button>
-          <button class="gimg" data-full="gallery/2.jpg" data-index="1"><img src="gallery/2.jpg" alt="갤러리 2" loading="lazy"></button>
-          <button class="gimg" data-full="gallery/3.jpg" data-index="2"><img src="gallery/3.jpg" alt="갤러리 3" loading="lazy"></button>
-          <button class="gimg" data-full="gallery/4.jpg" data-index="3"><img src="gallery/4.jpg" alt="갤러리 4" loading="lazy"></button>
-          <button class="gimg" data-full="gallery/5.jpg" data-index="4"><img src="gallery/5.jpg" alt="갤러리 5" loading="lazy"></button>
-          <button class="gimg" data-full="gallery/6.jpg" data-index="5"><img src="gallery/6.jpg" alt="갤러리 6" loading="lazy"></button>
-          <button class="gimg" data-full="gallery/7.jpg" data-index="6"><img src="gallery/7.jpg" alt="갤러리 7" loading="lazy"></button>
-          <button class="gimg" data-full="gallery/8.jpg" data-index="7"><img src="gallery/8.jpg" alt="갤러리 8" loading="lazy"></button>
-          <button class="gimg" data-full="gallery/99.jpg" data-index="8"><img src="gallery/99.jpg" alt="갤러리 9" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/21.jpg" data-index="0"><img src="gallery/21.jpg" alt="갤러리 1" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/22.jpg" data-index="1"><img src="gallery/22.jpg" alt="갤러리 2" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/23.jpg" data-index="2"><img src="gallery/23.jpg" alt="갤러리 3" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/24.jpg" data-index="3"><img src="gallery/24.jpg" alt="갤러리 4" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/25.jpg" data-index="4"><img src="gallery/25.jpg" alt="갤러리 5" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/26.jpg" data-index="5"><img src="gallery/26.jpg" alt="갤러리 6" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/27.jpg" data-index="6"><img src="gallery/27.jpg" alt="갤러리 7" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/28.jpg" data-index="7"><img src="gallery/28.jpg" alt="갤러리 8" loading="lazy"></button>
+          <button class="gimg" data-full="gallery/29.jpg" data-index="8"><img src="gallery/29.jpg" alt="갤러리 9" loading="lazy"></button>
         </div>
       </section>
 
       <!-- ACCOUNT -->
-      <section class="section" id="account">
+            <section class="section" id="account">
         <h2 class="section__title">마음 전하실 곳</h2>
         <p class="paragraph small">버튼을 누르면 계좌번호가 복사됩니다.</p>
 
         <div class="accounts">
           <details class="acc">
             <summary>신랑측 계좌</summary>
-            <div class="acc__item">
-              <div class="acc__num">국민 000000-00-000000</div>
-              <div class="acc__sub">예금주: 홍유석</div>
-              <button class="btn btn--wide copyBtn" data-copy="국민 000000-00-000000">계좌 복사</button>
+            <div class="acc__group">
+              <div class="accRow">
+                <div class="accRow__text">
+                  <div class="acc__holder">홍유석</div>
+                  <div class="acc__num">농협 302-9300-8722-91</div>
+                </div>
+                <button class="btn btn--compact copyBtn" data-copy="농협 302-9300-8722-91">복사</button>
+              </div>
+
+              <div class="accRow">
+                <div class="accRow__text">
+                  <div class="acc__holder">홍양식</div>
+                  <div class="acc__num">농협 301032-52-064711</div>
+                </div>
+                <button class="btn btn--compact copyBtn" data-copy="농협 301032-52-064711">복사</button>
+              </div>
+
+              <div class="accRow">
+                <div class="accRow__text">
+                  <div class="acc__holder">윤옥선</div>
+                  <div class="acc__num">신한은행 110-044-645861</div>
+                </div>
+                <button class="btn btn--compact copyBtn" data-copy="신한은행 110-044-645861">복사</button>
+              </div>
             </div>
           </details>
 
           <details class="acc">
             <summary>신부측 계좌</summary>
-            <div class="acc__item">
-              <div class="acc__num">신한 000-000-000000</div>
-              <div class="acc__sub">예금주: 박샛별</div>
-              <button class="btn btn--wide copyBtn" data-copy="신한 000-000-000000">계좌 복사</button>
+            <div class="acc__group">
+              <div class="accRow">
+                <div class="accRow__text">
+                  <div class="acc__holder">박샛별</div>
+                  <div class="acc__num">신한은행 110-339-263293</div>
+                </div>
+                <button class="btn btn--compact copyBtn" data-copy="신한은행 110-339-263293">복사</button>
+              </div>
+
+              <div class="accRow">
+                <div class="accRow__text">
+                  <div class="acc__holder">박용기</div>
+                  <div class="acc__num">우리은행 000-0000-0000</div>
+                </div>
+                <button class="btn btn--compact copyBtn" data-copy="은행명 000-0000-0000">복사</button>
+              </div>
             </div>
           </details>
         </div>
@@ -177,15 +209,21 @@
           <details class="faqItem">
             <summary>주차 안내</summary>
             <div class="faqBody">
-              주차 비용은 <strong>1시간당 1,500원</strong>입니다.
+              서울한방진흥센터 <strong>지하주차장 10분에 500원</strong><br/>
+              만차 시, <strong>근처 공영주차장</strong> 이용바랍니다.
             </div>
           </details>
 
           <details class="faqItem">
             <summary>셔틀 안내</summary>
             <div class="faqBody">
-              <strong>춘천 출발</strong> : 000에서 00시에 출발<br/>
-              <strong>귀가</strong> : 결혼식 후 식장 앞에서 4시에 출발
+              <strong>[춘천] </strong><br/>
+              <strong>출발</strong> : 000에서 00시에 출발<br/>
+              <strong>귀가</strong> : 식후 식장 앞에서 4시에 출발<br/><br/>
+              <strong>[세종] </strong><br/>
+              <strong>출발</strong> : 000에서 00시에 출발<br/>
+              <strong>귀가</strong> : 식후 식장 앞에서 4시에 출발
+
             </div>
           </details>
 
@@ -299,6 +337,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 
-  <script src="script.js?v=13"></script>
+  <script src="script.js?v=14"></script>
 </body>
 </html>

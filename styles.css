@@ -661,3 +661,57 @@ body{
   width: 100% !important;
   height: 100% !important;
 }
+
+/* ===== 계좌: 버튼을 오른쪽으로 ===== */
+.acc__group{
+  display: grid;
+  gap: 10px;
+  padding: 14px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.accRow{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(17,24,39,.08);
+  border-radius: 14px;
+  padding: 10px 10px 10px 12px;
+  background: #fff;
+}
+
+.accRow__text{
+  min-width: 0;
+}
+
+.acc__holder{
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.acc__num{
+  font-weight: 800;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+/* ===== 게시판 펼침 상태: 내부 스크롤 ===== */
+.gbList.is-expanded{
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.gbList.is-expanded::-webkit-scrollbar{
+  width: 6px;
+}
+.gbList.is-expanded::-webkit-scrollbar-thumb{
+  background: rgba(17,24,39,.18);
+  border-radius: 999px;
+}
+.gbList.is-expanded::-webkit-scrollbar-track{
+  background: transparent;
+}
